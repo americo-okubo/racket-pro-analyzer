@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Histórico de Jogos - Racket Pro Analyzer</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/icon-192.png">
+
+    <!-- Chart.js (local fallback) -->
+    <script src="/static/js/chart.umd.min.js"></script>
+
+    <!-- i18n -->
+    <script src="/static/js/i18n.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="/index.html" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
+                    <img src="/static/images/icon-192.png" alt="Logo" class="logo">
+                </a>
+                <h1><img id="sportIcon" src="" alt="" class="sport-icon-header"> <span id="sportName">Esporte</span></h1>
+            </div>
+            <div class="header-actions">
+                <!-- Language Selector -->
+                <div class="language-selector">
+                    <div class="language-flag" data-lang="pt-BR" onclick="changeLanguage('pt-BR')" title="Português (Brasil)">
+                        <img src="/static/images/flag-br.svg" alt="Português">
+                    </div>
+                    <div class="language-flag" data-lang="en-US" onclick="changeLanguage('en-US')" title="English (US)">
+                        <img src="/static/images/flag-us.svg" alt="English">
+                    </div>
+                    <div class="language-flag" data-lang="ja-JP" onclick="changeLanguage('ja-JP')" title="日本語 (Japanese)">
+                        <img src="/static/images/flag-jp.svg" alt="日本語">
+                    </div>
+                </div>
+                <button onclick="openHelpModal()" class="btn-help" title="Help">?</button>
+                <div class="user-info">
+                    <span id="userEmail">Carregando...</span>
+                    <button onclick="logout()" class="btn-secondary" data-i18n="common.logout">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <a href="/index.html"><span data-i18n="nav.home">🏠 Início</span></a>
+        <a href="#" class="active"><span data-i18n="nav.games">📊 Histórico</span></a>
+        <a href="#" onclick="openAnalyticsModal()"><span data-i18n="nav.charts">📈 Gráficos</span></a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Statistics Section -->
+        <section class="stats-section">
+            <h2 data-i18n="games.stats">📈 Estatísticas</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-value" id="totalWins">0</div>
+                    <div class="stat-label" data-i18n="stats.wins">Vitórias</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-value" id="totalLosses">0</div>
+                    <div class="stat-label" data-i18n="stats.losses">Derrotas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="winRate">0%</div>
+                    <div class="stat-label" data-i18n="stats.winRate">Taxa de Vitória</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="totalPlayers">0</div>
+                    <div class="stat-label" data-i18n="stats.players">Jogadores</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Actions Section -->
+        <section class="actions-section">
+            <button onclick="openNewGameModal()" class="btn-primary" data-i18n="games.newGame">➕ Novo Jogo</button>
+            <button onclick="openVoiceGameModal()" class="btn-voice-game" data-i18n="voice.btnStartVoice">🎤 Registrar por Voz</button>
+            <button onclick="openPlayersModal()" class="btn-secondary" data-i18n="games.players">👥 Jogadores</button>
+            <button onclick="openAnalyticsModal()" class="btn-secondary" data-i18n="games.charts">📊 Gráficos</button>
+        </section>
+
+        <!-- Games List Section -->
+        <section class="games-section">
+            <h2 data-i18n="games.history">📋 Histórico de Jogos</h2>
+
+            <!-- Filters -->
+            <div class="filters">
+                <select id="filterType" onchange="filterGames()">
+                    <option value="all" data-i18n="games.filterAll">Todos</option>
+                    <option value="singles" data-i18n="games.filterSingles">Simples</option>
+                    <option value="doubles" data-i18n="games.filterDoubles">Duplas</option>
+                </select>
+                <select id="filterResult" onchange="filterGames()">
+                    <option value="all" data-i18n="games.filterAllResults">Todos resultados</option>
+                    <option value="win" data-i18n="games.filterWins">Vitórias</option>
+                    <option value="loss" data-i18n="games.filterLosses">Derrotas</option>
+                    <option value="draw" data-i18n="games.filterDraws">Empates</option>
+                </select>
+            </div>
+
+            <!-- Games List -->
+            <div id="gamesList" class="games-list">
+                <p class="loading" data-i18n="common.loading">Carregando...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: New Game -->
+    <div id="newGameModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="games.newGameTitle">➕ Registrar Jogo</h2>
+                <button onclick="closeModal('newGameModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newGameForm" onsubmit="saveGame(event)">
+                    <div class="form-group">
+                        <label data-i18n="games.date">Data</label>
+                        <input type="date" id="gameDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="games.gameType">Tipo de Jogo</label>
+                        <div class="radio-group">
+                            <label class="radio-label" id="singlesOption">
+                                <input type="radio" name="gameType" value="singles" checked onchange="toggleDoublesFields()">
+                                <span data-i18n="games.singles">Simples</span>
+                            </label>
+                            <label class="radio-label" id="doublesOption">
+                                <input type="radio" name="gameType" value="doubles" onchange="toggleDoublesFields()">
+                                <span data-i18n="games.doubles">Duplas</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Singles Fields -->
+                    <div id="singlesFields">
+                        <div class="form-group">
+                            <label data-i18n="games.opponent">Adversário</label>
+                            <select id="opponentSelect">
+                                <option value="" data-i18n="games.selectOpponent">Selecione...</option>
+                            </select>
+                            <button type="button" onclick="openNewPlayerModal('opponent')" class="btn-link">
+                                + <span data-i18n="games.newPlayer">Novo jogador</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Doubles Fields -->
+                    <div id="doublesFields" style="display: none;">
+                        <div class="form-group">
+                            <label data-i18n="games.partner">🤝 Seu Parceiro</label>
+                            <select id="partnerSelect" onchange="onPlayerSelectChange()">
+                                <option value="" data-i18n="games.selectPartner">Selecione...</option>
+                            </select>
+                            <button type="button" onclick="openNewPlayerModal('partner')" class="btn-link">
+                                + <span data-i18n="games.newPlayer">Novo jogador</span>
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-i18n="games.opponent1">👥 Adversário 1</label>
+                            <select id="opponent1Select" onchange="onPlayerSelectChange()">
+                                <option value="" data-i18n="games.selectOpponent">Selecione...</option>
+                            </select>
+                            <button type="button" onclick="openNewPlayerModal('opponent1')" class="btn-link">
+                                + <span data-i18n="games.newPlayer">Novo jogador</span>
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label data-i18n="games.opponent2">👥 Adversário 2</label>
+                            <select id="opponent2Select" onchange="onPlayerSelectChange()">
+                                <option value="" data-i18n="games.selectOpponent">Selecione...</option>
+                            </select>
+                            <button type="button" onclick="openNewPlayerModal('opponent2')" class="btn-link">
+                                + <span data-i18n="games.newPlayer">Novo jogador</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Score by Sets -->
+                    <div class="form-group">
+                        <label data-i18n="games.score">Placar por Set</label>
+                        <div id="setsContainer" class="sets-container">
+                            <!-- Sets will be generated dynamically -->
+                        </div>
+                        <button type="button" onclick="addSet()" class="btn-link" id="addSetBtn" data-i18n="games.addSet">+ Adicionar Set</button>
+                    </div>
+
+                    <!-- Auto-calculated Result -->
+                    <div class="form-group">
+                        <label data-i18n="games.result">Resultado</label>
+                        <div id="resultDisplay" class="result-display">
+                            <span class="result-pending" data-i18n="games.fillSets">Preencha os sets acima</span>
+                        </div>
+                        <input type="hidden" id="gameResult" name="result" value="">
+                        <input type="hidden" id="gameScore" value="">
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="games.location">Local (opcional)</label>
+                        <input type="text" id="gameLocation" data-i18n-placeholder="games.locationPlaceholder" placeholder="Ex: Clube ABC">
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="games.notes">Notas (opcional)</label>
+                        <textarea id="gameNotes" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="closeModal('newGameModal')" class="btn-secondary" data-i18n="common.cancel">Cancelar</button>
+                        <button type="submit" class="btn-primary" data-i18n="common.save">💾 Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: New Player -->
+    <div id="newPlayerModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="players.newTitle">👥 Novo Jogador</h2>
+                <button onclick="closeModal('newPlayerModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newPlayerForm" onsubmit="savePlayer(event)">
+                    <input type="hidden" id="playerTarget">
+
+                    <div class="form-group">
+                        <label data-i18n="players.name">Nome</label>
+                        <input type="text" id="playerName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="players.hand">Mão Dominante</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="playerHand" value="right" checked>
+                                <span data-i18n="players.right">Destro</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="playerHand" value="left">
+                                <span data-i18n="players.left">Canhoto</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="players.level">Nível</label>
+                        <select id="playerLevel">
+                            <option value="beginner" data-i18n="players.beginner">Iniciante</option>
+                            <option value="intermediate" selected data-i18n="players.intermediate">Intermediário</option>
+                            <option value="advanced" data-i18n="players.advanced">Avançado</option>
+                            <option value="professional" data-i18n="players.professional">Profissional</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="players.style">Estilo de Jogo</label>
+                        <select id="playerStyle">
+                            <option value="offensive" data-i18n="players.offensive">Ofensivo</option>
+                            <option value="defensive" data-i18n="players.defensive">Defensivo</option>
+                            <option value="all_around" selected data-i18n="players.allAround">Equilibrado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="players.ageGroup">Faixa Etária</label>
+                        <select id="playerAgeGroup">
+                            <option value="under_20" data-i18n="players.under20">-19</option>
+                            <option value="20_39" selected data-i18n="players.age2039">20-39</option>
+                            <option value="40_59" data-i18n="players.age4059">40-59</option>
+                            <option value="60_plus" data-i18n="players.age60plus">60+</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="players.notes">Notas (opcional)</label>
+                        <textarea id="playerNotes" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="closeModal('newPlayerModal')" class="btn-secondary" data-i18n="common.cancel">Cancelar</button>
+                        <button type="submit" class="btn-primary" data-i18n="common.save">💾 Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Players List -->
+    <div id="playersModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 data-i18n="players.title">👥 Jogadores</h2>
+                <button onclick="closeModal('playersModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <button onclick="openNewPlayerModal()" class="btn-primary mb-3" data-i18n="players.add">+ Adicionar Jogador</button>
+                <div id="playersList" class="players-list">
+                    <p class="loading" data-i18n="common.loading">Carregando...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Analytics -->
+    <div id="analyticsModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 data-i18n="analytics.title">📊 Gráficos e Análises</h2>
+                <button onclick="closeModal('analyticsModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabs and Period Filter -->
+                <div class="analytics-header-row">
+                    <div class="analytics-tabs">
+                        <button class="analytics-tab active" onclick="switchAnalyticsTab('singles')" data-i18n="analytics.tabSingles">👤 Simples</button>
+                        <button class="analytics-tab" onclick="switchAnalyticsTab('doubles')" data-i18n="analytics.tabDoubles">👥 Duplas</button>
+                        <button class="analytics-tab" onclick="switchAnalyticsTab('overview')" data-i18n="analytics.tabOverview">📊 Geral</button>
+                    </div>
+                    <div class="period-filter">
+                        <label data-i18n="analytics.period">Período:</label>
+                        <select id="periodFilter" onchange="applyPeriodFilter()">
+                            <option value="all" data-i18n="analytics.allTime">Todo o histórico</option>
+                            <option value="7" data-i18n="analytics.last7days">Últimos 7 dias</option>
+                            <option value="30" data-i18n="analytics.last30days">Últimos 30 dias</option>
+                            <option value="90" data-i18n="analytics.last90days">Últimos 90 dias</option>
+                            <option value="180" data-i18n="analytics.last180days">Últimos 180 dias</option>
+                            <option value="365" data-i18n="analytics.last365days">Últimos 365 dias</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Singles Tab -->
+                <div id="singlesTab" class="analytics-tab-content active">
+                    <!-- Summary Table -->
+                    <div class="analytics-section">
+                        <div class="table-header-with-sort">
+                            <h3 data-i18n="analytics.summaryByOpponent">📋 Resumo por Adversário</h3>
+                            <div class="sort-options">
+                                <label data-i18n="analytics.sortBy">Ordenar:</label>
+                                <select id="singlesSortOption" onchange="renderSinglesOpponentTable()">
+                                    <option value="winRate" data-i18n="analytics.sortBestWinRate">Melhor taxa de vitória</option>
+                                    <option value="hardest" data-i18n="analytics.sortHardest">Mais difícil (menor taxa)</option>
+                                    <option value="mostPlayed" data-i18n="analytics.sortMostPlayed">Mais jogados</option>
+                                    <option value="recentFirst" data-i18n="analytics.sortRecentFirst">Mais recentes</option>
+                                    <option value="bestBalance" data-i18n="analytics.sortBestBalance">Melhor saldo de sets</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="singlesOpponentTable" class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="analytics.opponent">Adversário</th>
+                                        <th data-i18n="players.winsShort">V</th>
+                                        <th data-i18n="players.lossesShort">D</th>
+                                        <th data-i18n="analytics.rate">Taxa</th>
+                                        <th data-i18n="analytics.setBalanceShort">Saldo Sets</th>
+                                        <th data-i18n="analytics.lastGame">Último Jogo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Player History -->
+                    <div class="analytics-section">
+                        <div class="analytics-header">
+                            <h3 data-i18n="analytics.detailedHistory">📊 Histórico Detalhado</h3>
+                            <select id="singlesOpponentSelect" onchange="renderSinglesPlayerHistory()">
+                                <option value="" data-i18n="analytics.selectOpponent">Selecione um adversário...</option>
+                            </select>
+                        </div>
+                        <div class="chart-wrapper full-width">
+                            <canvas id="singlesHistoryChart"></canvas>
+                        </div>
+                        <div id="singlesStatsBox" class="player-stats-box" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Doubles Tab -->
+                <div id="doublesTab" class="analytics-tab-content" style="display: none;">
+                    <!-- Summary Tables -->
+                    <div class="analytics-section">
+                        <div class="table-header-with-sort">
+                            <h3 data-i18n="analytics.summaryByPartner">🤝 Resumo por Parceiro</h3>
+                            <div class="sort-options">
+                                <label data-i18n="analytics.sortBy">Ordenar:</label>
+                                <select id="doublesPartnerSortOption" onchange="renderDoublesPartnerTable()">
+                                    <option value="winRate" data-i18n="analytics.sortBestWinRate">Melhor taxa de vitória</option>
+                                    <option value="hardest" data-i18n="analytics.sortHardest">Mais difícil (menor taxa)</option>
+                                    <option value="mostPlayed" data-i18n="analytics.sortMostPlayed">Mais jogados</option>
+                                    <option value="recentFirst" data-i18n="analytics.sortRecentFirst">Mais recentes</option>
+                                    <option value="bestBalance" data-i18n="analytics.sortBestBalance">Melhor saldo de sets</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="doublesPartnerTable" class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="analytics.partner">Parceiro</th>
+                                        <th data-i18n="players.winsShort">V</th>
+                                        <th data-i18n="players.lossesShort">D</th>
+                                        <th data-i18n="analytics.rate">Taxa</th>
+                                        <th data-i18n="analytics.setBalanceShort">Saldo Sets</th>
+                                        <th data-i18n="analytics.lastGame">Último Jogo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="analytics-section">
+                        <div class="table-header-with-sort">
+                            <h3 data-i18n="analytics.summaryByOpponentDoubles">⚔️ Resumo por Adversário</h3>
+                            <div class="sort-options">
+                                <label data-i18n="analytics.sortBy">Ordenar:</label>
+                                <select id="doublesOpponentSortOption" onchange="renderDoublesOpponentTable()">
+                                    <option value="winRate" data-i18n="analytics.sortBestWinRate">Melhor taxa de vitória</option>
+                                    <option value="hardest" data-i18n="analytics.sortHardest">Mais difícil (menor taxa)</option>
+                                    <option value="mostPlayed" data-i18n="analytics.sortMostPlayed">Mais jogados</option>
+                                    <option value="recentFirst" data-i18n="analytics.sortRecentFirst">Mais recentes</option>
+                                    <option value="bestBalance" data-i18n="analytics.sortBestBalance">Melhor saldo de sets</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="doublesOpponentTable" class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="analytics.opponent">Adversário</th>
+                                        <th data-i18n="players.winsShort">V</th>
+                                        <th data-i18n="players.lossesShort">D</th>
+                                        <th data-i18n="analytics.rate">Taxa</th>
+                                        <th data-i18n="analytics.setBalanceShort">Saldo Sets</th>
+                                        <th data-i18n="analytics.lastGame">Último Jogo</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Partner History -->
+                    <div class="analytics-section">
+                        <div class="analytics-header">
+                            <h3 data-i18n="analytics.historyWithPartner">📊 Histórico com Parceiro</h3>
+                            <select id="doublesPartnerSelect" onchange="renderDoublesPartnerHistory()">
+                                <option value="" data-i18n="analytics.selectPartner">Selecione um parceiro...</option>
+                            </select>
+                        </div>
+                        <div class="chart-wrapper full-width">
+                            <canvas id="doublesPartnerHistoryChart"></canvas>
+                        </div>
+                        <div id="doublesPartnerStatsBox" class="player-stats-box" style="display: none;"></div>
+                    </div>
+
+                    <!-- Opponent History -->
+                    <div class="analytics-section">
+                        <div class="analytics-header">
+                            <h3 data-i18n="analytics.historyAgainstOpponent">📊 Histórico contra Adversário</h3>
+                            <select id="doublesOpponentSelect" onchange="renderDoublesOpponentHistory()">
+                                <option value="" data-i18n="analytics.selectOpponent">Selecione um adversário...</option>
+                            </select>
+                        </div>
+                        <div class="chart-wrapper full-width">
+                            <canvas id="doublesOpponentHistoryChart"></canvas>
+                        </div>
+                        <div id="doublesOpponentStatsBox" class="player-stats-box" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Overview Tab -->
+                <div id="overviewTab" class="analytics-tab-content" style="display: none;">
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <h3 data-i18n="analytics.gameTypes">Simples vs Duplas</h3>
+                            <canvas id="typeChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3 data-i18n="analytics.overallEvolution">Evolução Geral</h3>
+                            <canvas id="evolutionChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3 data-i18n="analytics.streakHistory">Histórico de Sequências</h3>
+                            <canvas id="streakChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3 data-i18n="analytics.gamesByDayOfWeek">Jogos por Dia da Semana</h3>
+                            <canvas id="dayOfWeekChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3 data-i18n="analytics.setBalanceEvolution">Evolução do Saldo de Sets</h3>
+                            <canvas id="setBalanceChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3 data-i18n="analytics.gamesFrequency">Frequência de Jogos</h3>
+                            <canvas id="frequencyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Head-to-Head -->
+    <div id="h2hModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="h2hTitle">Head-to-Head</h2>
+                <button onclick="closeModal('h2hModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- H2H Summary -->
+                <div id="h2hSummary" class="h2h-summary"></div>
+
+                <!-- H2H Games List -->
+                <div class="h2h-games-section">
+                    <h3 data-i18n="analytics.fullHistory">Histórico Completo</h3>
+                    <div id="h2hGamesList" class="h2h-games-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Help -->
+    <div id="helpModal" class="modal" style="display: none;">
+        <div class="modal-content modal-medium">
+            <div class="modal-header">
+                <h2 data-i18n="help.title">📖 Como usar o Racket Pro Analyzer</h2>
+                <button onclick="closeModal('helpModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body help-content">
+                <p class="help-intro" data-i18n="help.intro">Bem-vindo! Este app ajuda você a registrar e analisar suas partidas de esportes de raquete.</p>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section1Title">🏠 Tela Inicial</h3>
+                    <p data-i18n="help.section1Text">Escolha seu esporte e veja suas estatísticas gerais. Você pode alternar entre diferentes esportes a qualquer momento.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section2Title">➕ Registrar Partida</h3>
+                    <p data-i18n="help.section2Text">Clique em 'Novo Jogo' para registrar uma partida. Selecione a data, tipo (simples/duplas), adversário(s), resultado e placar opcional.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section3Title">👥 Gerenciar Jogadores</h3>
+                    <p data-i18n="help.section3Text">Cadastre jogadores com informações como nível, estilo de jogo e mão dominante. Isso ajuda a analisar seu desempenho contra diferentes tipos de adversários.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section4Title">📊 Gráficos e Análises</h3>
+                    <p data-i18n="help.section4Text">Acesse estatísticas detalhadas: histórico contra adversários, evolução da taxa de vitória, sequências, desempenho por dia da semana e muito mais.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section5Title">🌐 Idiomas</h3>
+                    <p data-i18n="help.section5Text">Use as bandeiras no canto superior para alternar entre Português, Inglês e Japonês.</p>
+                </div>
+
+                <div class="help-actions">
+                    <button onclick="closeModal('helpModal')" class="btn-primary" data-i18n="help.gotIt">Entendi!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/sports.js"></script>
+    <script src="/static/js/games.js"></script>
+    <script src="/static/js/voice-game-entry.js"></script>
+</body>
+</html>

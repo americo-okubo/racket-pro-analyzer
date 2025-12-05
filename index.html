@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Racket Pro Analyzer</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/images/icon-192.png">
+
+    <!-- i18n -->
+    <script src="/static/js/i18n.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="/static/images/icon-192.png" alt="Logo" class="logo">
+                <h1>🏸 Racket Pro Analyzer</h1>
+            </div>
+            <div class="header-actions">
+                <!-- Language Selector -->
+                <div class="language-selector">
+                    <div class="language-flag" data-lang="pt-BR" onclick="changeLanguage('pt-BR')" title="Português (Brasil)">
+                        <img src="/static/images/flag-br.svg" alt="Português">
+                    </div>
+                    <div class="language-flag" data-lang="en-US" onclick="changeLanguage('en-US')" title="English (US)">
+                        <img src="/static/images/flag-us.svg" alt="English">
+                    </div>
+                    <div class="language-flag" data-lang="ja-JP" onclick="changeLanguage('ja-JP')" title="日本語 (Japanese)">
+                        <img src="/static/images/flag-jp.svg" alt="日本語">
+                    </div>
+                </div>
+                <button onclick="openHelpModal()" class="btn-help" title="Help">?</button>
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span id="userEmail"></span>
+                    <button onclick="logout()" class="btn-secondary" data-i18n="common.logout">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Welcome Section (not logged in) -->
+        <section id="welcomeSection" class="welcome-section">
+            <div class="welcome-card">
+                <h2 data-i18n="home.welcome">Bem-vindo ao Racket Pro Analyzer!</h2>
+                <p data-i18n="home.description">Registre suas partidas de esportes de raquete e acompanhe sua evolução com estatísticas detalhadas.</p>
+
+                <div class="sports-preview">
+                    <span class="sport-icon" title="Tênis de Mesa">🏓</span>
+                    <span class="sport-icon" title="Badminton">🏸</span>
+                    <span class="sport-icon" title="Tênis">🎾</span>
+                    <span class="sport-icon" title="Squash">🟠</span>
+                    <span class="sport-icon" title="Padel">🏓</span>
+                    <span class="sport-icon" title="Beach Tennis">🏖️</span>
+                    <span class="sport-icon" title="Pickleball">🥒</span>
+                </div>
+
+                <button onclick="loginWithGoogle()" class="btn-google">
+                    <img src="/static/images/google-icon.svg" alt="Google">
+                    <span data-i18n="home.loginGoogle">Entrar com Google</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Sport Selection (logged in) -->
+        <section id="sportSelection" class="sport-selection" style="display: none;">
+            <h2 data-i18n="home.chooseSport">Escolha seu esporte</h2>
+
+            <div class="sports-grid">
+                <a href="/games.html?sport=table_tennis" class="sport-card">
+                    <img src="/static/images/sports/table_tennis.png" alt="Table Tennis" class="sport-icon-img">
+                    <h3 data-i18n="sports.tableTennis.name">Tênis de Mesa</h3>
+                    <p data-i18n="sports.tableTennis.desc">Simples e Duplas</p>
+                </a>
+
+                <a href="/games.html?sport=badminton" class="sport-card">
+                    <img src="/static/images/sports/badminton.png" alt="Badminton" class="sport-icon-img">
+                    <h3 data-i18n="sports.badminton.name">Badminton</h3>
+                    <p data-i18n="sports.badminton.desc">Simples e Duplas</p>
+                </a>
+
+                <a href="/games.html?sport=tennis" class="sport-card">
+                    <img src="/static/images/sports/tennis.png" alt="Tennis" class="sport-icon-img">
+                    <h3 data-i18n="sports.tennis.name">Tênis</h3>
+                    <p data-i18n="sports.tennis.desc">Simples e Duplas</p>
+                </a>
+
+                <a href="/games.html?sport=squash" class="sport-card">
+                    <img src="/static/images/sports/squash.png" alt="Squash" class="sport-icon-img">
+                    <h3 data-i18n="sports.squash.name">Squash</h3>
+                    <p data-i18n="sports.squash.desc">Simples</p>
+                </a>
+
+                <a href="/games.html?sport=padel" class="sport-card">
+                    <img src="/static/images/sports/padel.png" alt="Padel" class="sport-icon-img">
+                    <h3 data-i18n="sports.padel.name">Padel</h3>
+                    <p data-i18n="sports.padel.desc">Duplas</p>
+                </a>
+
+                <a href="/games.html?sport=beach_tennis" class="sport-card">
+                    <img src="/static/images/sports/beach_tennis.png" alt="Beach Tennis" class="sport-icon-img">
+                    <h3 data-i18n="sports.beachTennis.name">Beach Tennis</h3>
+                    <p data-i18n="sports.beachTennis.desc">Duplas</p>
+                </a>
+
+                <a href="/games.html?sport=pickleball" class="sport-card">
+                    <img src="/static/images/sports/pickleball.png" alt="Pickleball" class="sport-icon-img">
+                    <h3 data-i18n="sports.pickleball.name">Pickleball</h3>
+                    <p data-i18n="sports.pickleball.desc">Simples e Duplas</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Overall Statistics (logged in) -->
+        <section id="overallStats" class="stats-section" style="display: none;">
+            <h2 data-i18n="home.overallStats">📊 Estatísticas Gerais</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🎮</div>
+                    <div class="stat-value" id="totalGames">0</div>
+                    <div class="stat-label" data-i18n="stats.totalGames">Total de Jogos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-value" id="totalWins">0</div>
+                    <div class="stat-label" data-i18n="stats.wins">Vitórias</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="winRate">0%</div>
+                    <div class="stat-label" data-i18n="stats.winRate">Taxa de Vitória</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏸</div>
+                    <div class="stat-value" id="sportsCount">0</div>
+                    <div class="stat-label" data-i18n="stats.sportsPlayed">Esportes</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2025 Racket Pro Analyzer</p>
+        <p>
+            <a href="/privacy-policy.html" data-i18n="common.privacyPolicy">Política de Privacidade</a>
+        </p>
+    </footer>
+
+    <!-- Modal: Help -->
+    <div id="helpModal" class="modal" style="display: none;">
+        <div class="modal-content modal-medium">
+            <div class="modal-header">
+                <h2 data-i18n="help.title">📖 Como usar o Racket Pro Analyzer</h2>
+                <button onclick="closeHelpModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body help-content">
+                <p class="help-intro" data-i18n="help.intro">Bem-vindo! Este app ajuda você a registrar e analisar suas partidas de esportes de raquete.</p>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section1Title">🏠 Tela Inicial</h3>
+                    <p data-i18n="help.section1Text">Escolha seu esporte e veja suas estatísticas gerais. Você pode alternar entre diferentes esportes a qualquer momento.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section2Title">➕ Registrar Partida</h3>
+                    <p data-i18n="help.section2Text">Clique em 'Novo Jogo' para registrar uma partida. Selecione a data, tipo (simples/duplas), adversário(s), resultado e placar opcional.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section3Title">👥 Gerenciar Jogadores</h3>
+                    <p data-i18n="help.section3Text">Cadastre jogadores com informações como nível, estilo de jogo e mão dominante. Isso ajuda a analisar seu desempenho contra diferentes tipos de adversários.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section4Title">📊 Gráficos e Análises</h3>
+                    <p data-i18n="help.section4Text">Acesse estatísticas detalhadas: histórico contra adversários, evolução da taxa de vitória, sequências, desempenho por dia da semana e muito mais.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.section5Title">🌐 Idiomas</h3>
+                    <p data-i18n="help.section5Text">Use as bandeiras no canto superior para alternar entre Português, Inglês e Japonês.</p>
+                </div>
+
+                <div class="help-actions">
+                    <button onclick="closeHelpModal()" class="btn-primary" data-i18n="help.gotIt">Entendi!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        function openHelpModal() {
+            document.getElementById('helpModal').style.display = 'flex';
+            if (window.i18n && window.i18n.applyTranslations) {
+                window.i18n.applyTranslations();
+            }
+        }
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+        // Close modal when clicking outside
+        document.getElementById('helpModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHelpModal();
+            }
+        });
+    </script>
+</body>
+</html>

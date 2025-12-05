@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Login - Racket Pro Analyzer</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/icon-192.png">
+
+    <!-- i18n -->
+    <script src="/static/js/i18n.js"></script>
+</head>
+<body>
+    <main class="login-container">
+        <div class="login-card">
+            <img src="/static/images/icon-192.png" alt="Logo" class="login-logo">
+            <h1>🏸 Racket Pro Analyzer</h1>
+            <p data-i18n="login.subtitle">Registre e analise suas partidas de esportes de raquete</p>
+
+            <div class="sports-preview">
+                <span class="sport-icon">🏓</span>
+                <span class="sport-icon">🏸</span>
+                <span class="sport-icon">🎾</span>
+                <span class="sport-icon">🟠</span>
+                <span class="sport-icon">🏖️</span>
+                <span class="sport-icon">🥒</span>
+            </div>
+
+            <button onclick="loginWithGoogle()" class="btn-google">
+                <img src="/static/images/google-icon.svg" alt="Google">
+                <span data-i18n="login.googleButton">Entrar com Google</span>
+            </button>
+
+            <p class="login-note" data-i18n="login.note">
+                Use sua conta Google para acessar o aplicativo de forma segura.
+            </p>
+        </div>
+    </main>
+
+    <!-- Google Sign-In -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script>
+        const GOOGLE_CLIENT_ID = '123444066656-tffnuqtcqkv0jsocvu5o1up0e0g0r2e4.apps.googleusercontent.com';
+        const DEV_MODE = !GOOGLE_CLIENT_ID || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        function loginWithGoogle() {
+            // If in dev mode and no Google Client ID, use dev login
+            if (DEV_MODE && !GOOGLE_CLIENT_ID) {
+                loginWithDev();
+                return;
+            }
+
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleResponse
+            });
+            google.accounts.id.prompt();
+        }
+
+        async function loginWithDev() {
+            try {
+                const res = await fetch('/api/auth/dev', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'dev@test.com',
+                        name: 'Dev User'
+                    })
+                });
+
+                if (!res.ok) throw new Error('Falha na autenticação de desenvolvimento');
+
+                const data = await res.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Redirect
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect') || '/';
+                window.location.href = redirect;
+            } catch (error) {
+                console.error('Erro no login dev:', error);
+                alert('Erro ao fazer login de desenvolvimento. Verifique se o servidor está rodando.');
+            }
+        }
+
+        async function handleGoogleResponse(response) {
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+
+                if (!res.ok) throw new Error('Falha na autenticação');
+
+                const data = await res.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                // Redirect
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect') || '/';
+                window.location.href = redirect;
+            } catch (error) {
+                console.error('Erro no login:', error);
+                alert('Erro ao fazer login. Tente novamente.');
+            }
+        }
+
+        // Check if already logged in
+        if (localStorage.getItem('token')) {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

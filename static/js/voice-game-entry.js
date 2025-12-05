@@ -1,0 +1,1260 @@
+/**
+ * Voice Game Entry Module for Racket Pro Analyzer
+ * Guided voice input for registering new games
+ * Supports: pt-BR, en-US, ja-JP
+ * Supports: Multiple sports, Singles and Doubles
+ */
+
+// Voice Game Entry State
+const voiceGameEntry = {
+    isActive: false,
+    currentStep: 0,
+    recognition: null,
+    listeningTimeout: null,
+    gameData: {
+        game_date: null,
+        game_type: 'singles',
+        opponent_id: null,
+        opponent_name: null,
+        opponent2_id: null,
+        opponent2_name: null,
+        partner_id: null,
+        partner_name: null,
+        result: null,
+        score: null,
+        location: null,
+        notes: null
+    },
+    players: [], // Will be loaded from global players array
+    pendingMatches: [],
+    pendingObservation: null,
+    recordingObservations: false
+};
+
+// Translations for voice prompts
+const voiceGameTranslations = {
+    'pt-BR': {
+        // Button and modal
+        btnStartVoice: '🎤 Registrar por Voz',
+        modalTitle: '🎤 Registro por Voz',
+        modalSubtitle: 'Fale quando o microfone estiver ativo',
+        btnCancel: 'Cancelar',
+        btnSkip: 'Pular',
+        btnRetry: '🔄 Repetir',
+        btnKeyboard: '⌨️ Teclado',
+        btnYes: '✓ Sim',
+        btnNo: '✗ Não',
+        btnWon: '🏆 Ganhei',
+        btnLost: '😔 Perdi',
+        btnDraw: '🤝 Empate',
+        btnSingles: '👤 Simples',
+        btnDoubles: '👥 Duplas',
+        inputPlaceholder: 'Digite aqui...',
+        inputPlayer: 'Nome do jogador...',
+        inputScore: 'Placar (ex: 3 a 1)',
+        inputLocation: 'Local do jogo...',
+        summary: '📋 Resumo',
+        btnTryOtherName: '🔄 Dizer outro nome',
+        listening: '🎤 Ouvindo...',
+        processing: '⏳ Processando...',
+
+        // Steps
+        step1_prompt: '<span class="voice-highlight">📆 DATA</span>\n\nHoje ({date})\n\n<span class="voice-hint">Diga "Sim" ou a data correta</span>',
+        step1_confirm: '✅ Data confirmada:\n<span class="voice-highlight">{date}</span>',
+        step1_updated: '✅ Data alterada para:\n<span class="voice-highlight">{date}</span>',
+
+        step2_prompt: '<span class="voice-highlight">🎮 TIPO DE JOGO</span>\n\n<span class="voice-hint">Diga "Simples" ou "Duplas"</span>',
+        step2_singles: '✅ <span class="voice-highlight">Simples</span> selecionado',
+        step2_doubles: '✅ <span class="voice-highlight">Duplas</span> selecionado',
+
+        step3_prompt: '<span class="voice-highlight">👤 ADVERSÁRIO</span>\n\n<span class="voice-hint">Diga o nome</span>',
+        step3_found: '✅ Encontrei:\n\n<span class="voice-highlight">{name}</span>\n\nEstá correto?',
+        step3_notFound: '❌ Não encontrei:\n\n<span class="voice-highlight">"{name}"</span>\n\n<span class="voice-hint">Cadastre primeiro pelo teclado.</span>',
+        step3_multiple: '🔍 Encontrei <span class="voice-highlight">{count}</span> jogadores.\n\nQual deles?',
+        step3_confirmed: '✅ Adversário:\n<span class="voice-highlight">{name}</span>',
+
+        step3b_prompt: '<span class="voice-highlight">👤 SEGUNDO ADVERSÁRIO</span>\n\n<span class="voice-hint">Diga o nome do segundo adversário</span>',
+        step3b_confirmed: '✅ Segundo adversário:\n<span class="voice-highlight">{name}</span>',
+
+        step3c_prompt: '<span class="voice-highlight">🤝 PARCEIRO</span>\n\n<span class="voice-hint">Diga o nome do seu parceiro</span>',
+        step3c_confirmed: '✅ Parceiro:\n<span class="voice-highlight">{name}</span>',
+
+        step4_prompt: '<span class="voice-highlight">🏆 RESULTADO</span>\n\n<span class="voice-hint">Diga "Ganhei", "Perdi" ou "Empate"</span>',
+        step4_won: '✅ <span class="voice-highlight">Vitória</span> registrada!',
+        step4_lost: '✅ <span class="voice-highlight">Derrota</span> registrada.',
+        step4_draw: '✅ <span class="voice-highlight">Empate</span> registrado.',
+
+        step5_prompt: '<span class="voice-highlight">📊 PLACAR</span>\n\n<span class="voice-hint">Diga o placar (ex: "3 a 1" ou "6-4 6-3")</span>',
+        step5_confirmed: '✅ Placar:\n<span class="voice-highlight">{score}</span>',
+        step5_skipped: '⏭️ Placar pulado.',
+
+        step6_prompt: '<span class="voice-highlight">📍 LOCAL</span>\n\n<span class="voice-hint">Diga o local ou "Pular"</span>',
+        step6_saved: '✅ Local:\n<span class="voice-highlight">{location}</span>',
+        step6_skipped: '⏭️ Local pulado.',
+
+        step7_prompt: '<span class="voice-highlight">📝 OBSERVAÇÕES</span>\n\n<span class="voice-hint">Diga "Sim" para gravar ou "Pular"</span>',
+        step7_recording: '<span class="voice-highlight">🎤 GRAVANDO</span>\n\n<span class="voice-recording-hint">Fale suas observações agora!</span>',
+        step7_confirm: '📝 Você disse:\n\n<span class="voice-highlight">"{text}"</span>\n\n<span class="voice-hint">Está correto?</span>',
+        step7_saved: '✅ Observações salvas!',
+        step7_skipped: '⏭️ Observações puladas.',
+        btnRetryObservation: '🔄 Gravar novamente',
+
+        step8_prompt: '<span class="voice-highlight">✅ CONFIRMAR?</span>\n\n📅 {date}\n🎮 {gameType}\n👤 {players}\n🏆 {result}{score}{location}\n\n<span class="voice-hint">Diga "Sim" para salvar</span>',
+        step8_saved: '🎉 <span class="voice-highlight">Jogo salvo!</span>',
+        step8_cancelled: '❌ Registro cancelado.',
+
+        // Responses recognition
+        yes: ['sim', 'correto', 'isso', 'confirmo', 'ok', 'certo', 'exato'],
+        no: ['não', 'nao', 'errado', 'cancela', 'cancelar'],
+        won: ['ganhei', 'venci', 'vitória', 'vitoria', 'win', 'ganhamos', 'vencemos'],
+        lost: ['perdi', 'derrota', 'perdeu', 'perdemos'],
+        draw: ['empate', 'empatei', 'empatamos'],
+        skip: ['pular', 'pula', 'próximo', 'proximo', 'não quero'],
+        singles: ['simples', 'single', 'sozinho', 'individual'],
+        doubles: ['duplas', 'dupla', 'double', 'doubles', 'parceiro'],
+
+        // Errors
+        errorNotUnderstood: '❓ Não entendi. Por favor, repita.',
+        errorNoSpeech: '🔇 Não detectei sua voz. Tente novamente.',
+        errorMicrophone: '🎤 Erro no microfone. Verifique as permissões.',
+        errorMicStuck: '🎤 Microfone parou. Toque no 🎤 para tentar novamente.',
+
+        // Date words
+        today: 'hoje',
+        yesterday: 'ontem',
+        dayBeforeYesterday: 'anteontem',
+
+        // Labels
+        labelSingles: 'Simples',
+        labelDoubles: 'Duplas',
+        labelVictory: 'Vitória',
+        labelDefeat: 'Derrota',
+        labelDraw: 'Empate'
+    },
+    'en-US': {
+        btnStartVoice: '🎤 Register by Voice',
+        modalTitle: '🎤 Voice Registration',
+        modalSubtitle: 'Speak when the microphone is active',
+        btnCancel: 'Cancel',
+        btnSkip: 'Skip',
+        btnRetry: '🔄 Repeat',
+        btnKeyboard: '⌨️ Keyboard',
+        btnYes: '✓ Yes',
+        btnNo: '✗ No',
+        btnWon: '🏆 I won',
+        btnLost: '😔 I lost',
+        btnDraw: '🤝 Draw',
+        btnSingles: '👤 Singles',
+        btnDoubles: '👥 Doubles',
+        inputPlaceholder: 'Type here...',
+        inputPlayer: 'Player name...',
+        inputScore: 'Score (e.g., 3 to 1)',
+        inputLocation: 'Game location...',
+        summary: '📋 Summary',
+        btnTryOtherName: '🔄 Try another name',
+        listening: '🎤 Listening...',
+        processing: '⏳ Processing...',
+
+        step1_prompt: '<span class="voice-highlight">📆 DATE</span>\n\nToday ({date})\n\n<span class="voice-hint">Say "Yes" or the correct date</span>',
+        step1_confirm: '✅ Date confirmed:\n<span class="voice-highlight">{date}</span>',
+        step1_updated: '✅ Date changed to:\n<span class="voice-highlight">{date}</span>',
+
+        step2_prompt: '<span class="voice-highlight">🎮 GAME TYPE</span>\n\n<span class="voice-hint">Say "Singles" or "Doubles"</span>',
+        step2_singles: '✅ <span class="voice-highlight">Singles</span> selected',
+        step2_doubles: '✅ <span class="voice-highlight">Doubles</span> selected',
+
+        step3_prompt: '<span class="voice-highlight">👤 OPPONENT</span>\n\n<span class="voice-hint">Say the name</span>',
+        step3_found: '✅ Found:\n\n<span class="voice-highlight">{name}</span>\n\nIs that correct?',
+        step3_notFound: '❌ Not found:\n\n<span class="voice-highlight">"{name}"</span>\n\n<span class="voice-hint">Please register first.</span>',
+        step3_multiple: '🔍 Found <span class="voice-highlight">{count}</span> players.\n\nWhich one?',
+        step3_confirmed: '✅ Opponent:\n<span class="voice-highlight">{name}</span>',
+
+        step3b_prompt: '<span class="voice-highlight">👤 SECOND OPPONENT</span>\n\n<span class="voice-hint">Say the second opponent\'s name</span>',
+        step3b_confirmed: '✅ Second opponent:\n<span class="voice-highlight">{name}</span>',
+
+        step3c_prompt: '<span class="voice-highlight">🤝 PARTNER</span>\n\n<span class="voice-hint">Say your partner\'s name</span>',
+        step3c_confirmed: '✅ Partner:\n<span class="voice-highlight">{name}</span>',
+
+        step4_prompt: '<span class="voice-highlight">🏆 RESULT</span>\n\n<span class="voice-hint">Say "I won", "I lost" or "Draw"</span>',
+        step4_won: '✅ <span class="voice-highlight">Victory</span> registered!',
+        step4_lost: '✅ <span class="voice-highlight">Defeat</span> registered.',
+        step4_draw: '✅ <span class="voice-highlight">Draw</span> registered.',
+
+        step5_prompt: '<span class="voice-highlight">📊 SCORE</span>\n\n<span class="voice-hint">Say the score (e.g., "3 to 1" or "6-4 6-3")</span>',
+        step5_confirmed: '✅ Score:\n<span class="voice-highlight">{score}</span>',
+        step5_skipped: '⏭️ Score skipped.',
+
+        step6_prompt: '<span class="voice-highlight">📍 LOCATION</span>\n\n<span class="voice-hint">Say the location or "Skip"</span>',
+        step6_saved: '✅ Location:\n<span class="voice-highlight">{location}</span>',
+        step6_skipped: '⏭️ Location skipped.',
+
+        step7_prompt: '<span class="voice-highlight">📝 NOTES</span>\n\n<span class="voice-hint">Say "Yes" to record or "Skip"</span>',
+        step7_recording: '<span class="voice-highlight">🎤 RECORDING</span>\n\n<span class="voice-recording-hint">Speak your notes now!</span>',
+        step7_confirm: '📝 You said:\n\n<span class="voice-highlight">"{text}"</span>\n\n<span class="voice-hint">Is that correct?</span>',
+        step7_saved: '✅ Notes saved!',
+        step7_skipped: '⏭️ Notes skipped.',
+        btnRetryObservation: '🔄 Record again',
+
+        step8_prompt: '<span class="voice-highlight">✅ CONFIRM?</span>\n\n📅 {date}\n🎮 {gameType}\n👤 {players}\n🏆 {result}{score}{location}\n\n<span class="voice-hint">Say "Yes" to save</span>',
+        step8_saved: '🎉 <span class="voice-highlight">Game saved!</span>',
+        step8_cancelled: '❌ Registration cancelled.',
+
+        yes: ['yes', 'correct', 'right', 'confirm', 'ok', 'yeah', 'yep', 'sure'],
+        no: ['no', 'wrong', 'cancel', 'nope'],
+        won: ['won', 'win', 'victory', 'beat', 'i won', 'we won'],
+        lost: ['lost', 'lose', 'defeat', 'i lost', 'we lost'],
+        draw: ['draw', 'tie', 'tied'],
+        skip: ['skip', 'next', 'pass'],
+        singles: ['singles', 'single', 'alone', 'individual', 'one on one'],
+        doubles: ['doubles', 'double', 'partner', 'team', 'pairs'],
+
+        errorNotUnderstood: '❓ Didn\'t understand. Please repeat.',
+        errorNoSpeech: '🔇 No voice detected. Try again.',
+        errorMicrophone: '🎤 Microphone error. Check permissions.',
+        errorMicStuck: '🎤 Microphone stopped. Tap 🎤 to try again.',
+
+        today: 'today',
+        yesterday: 'yesterday',
+        dayBeforeYesterday: 'day before yesterday',
+
+        labelSingles: 'Singles',
+        labelDoubles: 'Doubles',
+        labelVictory: 'Victory',
+        labelDefeat: 'Defeat',
+        labelDraw: 'Draw'
+    },
+    'ja-JP': {
+        btnStartVoice: '🎤 音声で登録',
+        modalTitle: '🎤 音声登録',
+        modalSubtitle: 'マイクがアクティブになったら話してください',
+        btnCancel: 'キャンセル',
+        btnSkip: 'スキップ',
+        btnRetry: '🔄 再試行',
+        btnKeyboard: '⌨️ キーボード',
+        btnYes: '✓ はい',
+        btnNo: '✗ いいえ',
+        btnWon: '🏆 勝った',
+        btnLost: '😔 負けた',
+        btnDraw: '🤝 引き分け',
+        btnSingles: '👤 シングルス',
+        btnDoubles: '👥 ダブルス',
+        inputPlaceholder: 'ここに入力...',
+        inputPlayer: '選手名...',
+        inputScore: 'スコア (例: 3対1)',
+        inputLocation: '場所...',
+        summary: '📋 まとめ',
+        btnTryOtherName: '🔄 別の名前を試す',
+        listening: '🎤 聞いています...',
+        processing: '⏳ 処理中...',
+
+        step1_prompt: '<span class="voice-highlight">📆 日付</span>\n\n今日 ({date})\n\n<span class="voice-hint">「はい」または正しい日付</span>',
+        step1_confirm: '✅ 日付確認:\n<span class="voice-highlight">{date}</span>',
+        step1_updated: '✅ 日付変更:\n<span class="voice-highlight">{date}</span>',
+
+        step2_prompt: '<span class="voice-highlight">🎮 試合タイプ</span>\n\n<span class="voice-hint">「シングルス」または「ダブルス」</span>',
+        step2_singles: '✅ <span class="voice-highlight">シングルス</span>選択',
+        step2_doubles: '✅ <span class="voice-highlight">ダブルス</span>選択',
+
+        step3_prompt: '<span class="voice-highlight">👤 対戦相手</span>\n\n<span class="voice-hint">名前を言って</span>',
+        step3_found: '✅ 見つかりました:\n\n<span class="voice-highlight">{name}</span>\n\n正しいですか？',
+        step3_notFound: '❌ 見つかりません:\n\n<span class="voice-highlight">「{name}」</span>\n\n<span class="voice-hint">先に登録してください</span>',
+        step3_multiple: '🔍 <span class="voice-highlight">{count}人</span>見つかりました\n\nどの人？',
+        step3_confirmed: '✅ 対戦相手:\n<span class="voice-highlight">{name}</span>',
+
+        step3b_prompt: '<span class="voice-highlight">👤 2人目の対戦相手</span>\n\n<span class="voice-hint">2人目の名前を言って</span>',
+        step3b_confirmed: '✅ 2人目:\n<span class="voice-highlight">{name}</span>',
+
+        step3c_prompt: '<span class="voice-highlight">🤝 パートナー</span>\n\n<span class="voice-hint">パートナーの名前を言って</span>',
+        step3c_confirmed: '✅ パートナー:\n<span class="voice-highlight">{name}</span>',
+
+        step4_prompt: '<span class="voice-highlight">🏆 結果</span>\n\n<span class="voice-hint">「勝った」「負けた」「引き分け」</span>',
+        step4_won: '✅ <span class="voice-highlight">勝利</span>を記録！',
+        step4_lost: '✅ <span class="voice-highlight">敗北</span>を記録',
+        step4_draw: '✅ <span class="voice-highlight">引き分け</span>を記録',
+
+        step5_prompt: '<span class="voice-highlight">📊 スコア</span>\n\n<span class="voice-hint">スコアを言って (例:「3対1」)</span>',
+        step5_confirmed: '✅ スコア:\n<span class="voice-highlight">{score}</span>',
+        step5_skipped: '⏭️ スキップ',
+
+        step6_prompt: '<span class="voice-highlight">📍 場所</span>\n\n<span class="voice-hint">場所を言うか「スキップ」</span>',
+        step6_saved: '✅ 場所:\n<span class="voice-highlight">{location}</span>',
+        step6_skipped: '⏭️ スキップ',
+
+        step7_prompt: '<span class="voice-highlight">📝 メモ</span>\n\n<span class="voice-hint">「はい」で録音、「スキップ」</span>',
+        step7_recording: '<span class="voice-highlight">🎤 録音中</span>\n\n<span class="voice-recording-hint">メモを話してください！</span>',
+        step7_confirm: '📝 認識結果:\n\n<span class="voice-highlight">「{text}」</span>\n\n<span class="voice-hint">正しいですか？</span>',
+        step7_saved: '✅ 保存しました！',
+        step7_skipped: '⏭️ スキップ',
+        btnRetryObservation: '🔄 もう一度録音',
+
+        step8_prompt: '<span class="voice-highlight">✅ 確認</span>\n\n📅 {date}\n🎮 {gameType}\n👤 {players}\n🏆 {result}{score}{location}\n\n<span class="voice-hint">「はい」で保存</span>',
+        step8_saved: '🎉 <span class="voice-highlight">保存しました！</span>',
+        step8_cancelled: '❌ キャンセル',
+
+        yes: ['はい', 'うん', 'そう', 'ok', 'オッケー'],
+        no: ['いいえ', 'ううん', 'ちがう', 'キャンセル'],
+        won: ['勝った', '勝ち', '勝利', 'かった'],
+        lost: ['負けた', '負け', '敗北', 'まけた'],
+        draw: ['引き分け', 'ひきわけ', 'ドロー'],
+        skip: ['スキップ', '次', 'パス'],
+        singles: ['シングルス', 'シングル', '単'],
+        doubles: ['ダブルス', 'ダブル', '複'],
+
+        errorNotUnderstood: '❓ 理解できませんでした。もう一度。',
+        errorNoSpeech: '🔇 音声が検出されませんでした。',
+        errorMicrophone: '🎤 マイクエラー。',
+        errorMicStuck: '🎤 マイクが停止。🎤をタップ。',
+
+        today: '今日',
+        yesterday: '昨日',
+        dayBeforeYesterday: '一昨日',
+
+        labelSingles: 'シングルス',
+        labelDoubles: 'ダブルス',
+        labelVictory: '勝利',
+        labelDefeat: '敗北',
+        labelDraw: '引き分け'
+    }
+};
+
+/**
+ * Get current language
+ */
+function getVoiceGameLang() {
+    if (window.i18n && window.i18n.currentLang) {
+        return window.i18n.currentLang;
+    }
+    return localStorage.getItem('language') || localStorage.getItem('preferredLanguage') || 'pt-BR';
+}
+
+/**
+ * Get translation text
+ */
+function getVoiceGameText(key) {
+    const lang = getVoiceGameLang();
+    const translations = voiceGameTranslations[lang] || voiceGameTranslations['pt-BR'];
+    return translations[key] || voiceGameTranslations['pt-BR'][key] || key;
+}
+
+/**
+ * Format date for display
+ */
+function formatDateForVoice(date) {
+    const lang = getVoiceGameLang();
+    const options = { weekday: 'long', day: 'numeric', month: 'long' };
+    return date.toLocaleDateString(lang, options);
+}
+
+/**
+ * Parse date from voice input
+ */
+function parseDateFromVoice(text) {
+    const lang = getVoiceGameLang();
+    const t = voiceGameTranslations[lang];
+    const lowerText = text.toLowerCase();
+    const today = new Date();
+
+    if (lowerText.includes(t.today)) return today;
+    if (lowerText.includes(t.yesterday)) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - 1);
+        return d;
+    }
+    if (lowerText.includes(t.dayBeforeYesterday)) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - 2);
+        return d;
+    }
+
+    const dayMatch = text.match(/(\d{1,2})/);
+    if (dayMatch) {
+        const day = parseInt(dayMatch[1]);
+        if (day >= 1 && day <= 31) {
+            const newDate = new Date(today);
+            newDate.setDate(day);
+            if (newDate > today) newDate.setMonth(newDate.getMonth() - 1);
+            return newDate;
+        }
+    }
+    return null;
+}
+
+/**
+ * Check if text matches keywords
+ */
+function matchesKeywords(text, keywordType) {
+    const lang = getVoiceGameLang();
+    const keywords = voiceGameTranslations[lang][keywordType] || [];
+    const lowerText = text.toLowerCase().trim();
+    return keywords.some(k => lowerText.includes(k.toLowerCase()));
+}
+
+/**
+ * Search player by name (fuzzy matching)
+ */
+function searchPlayerByVoice(spokenName) {
+    const lowerSpoken = spokenName.toLowerCase().trim();
+    console.log('Searching for:', lowerSpoken, 'in', voiceGameEntry.players.length, 'players');
+
+    // Exact match
+    let exact = voiceGameEntry.players.find(p => p.name.toLowerCase() === lowerSpoken);
+    if (exact) return [exact];
+
+    // Partial match
+    let partial = voiceGameEntry.players.filter(p => {
+        const nameLower = p.name.toLowerCase();
+        const firstName = nameLower.split(/\s+/)[0];
+        return nameLower.includes(lowerSpoken) ||
+               lowerSpoken.includes(nameLower) ||
+               firstName === lowerSpoken ||
+               firstName.startsWith(lowerSpoken);
+    });
+    if (partial.length > 0) return partial;
+
+    // Fuzzy match
+    return voiceGameEntry.players.filter(p => {
+        const firstName = p.name.toLowerCase().split(/\s+/)[0];
+        return calculateSimilarity(firstName, lowerSpoken) > 0.5;
+    });
+}
+
+/**
+ * Simple string similarity
+ */
+function calculateSimilarity(str1, str2) {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    if (longer.length === 0) return 1.0;
+
+    const costs = [];
+    for (let i = 0; i <= str1.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= str2.length; j++) {
+            if (i === 0) costs[j] = j;
+            else if (j > 0) {
+                let newValue = costs[j - 1];
+                if (str1.charAt(i - 1) !== str2.charAt(j - 1)) {
+                    newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                }
+                costs[j - 1] = lastValue;
+                lastValue = newValue;
+            }
+        }
+        if (i > 0) costs[str2.length] = lastValue;
+    }
+    return (longer.length - costs[str2.length]) / longer.length;
+}
+
+/**
+ * Initialize speech recognition
+ */
+function initVoiceGameRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return null;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = getVoiceGameLang();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    return recognition;
+}
+
+/**
+ * Load players from global array
+ */
+function loadPlayersForVoice() {
+    if (window.players && Array.isArray(window.players)) {
+        voiceGameEntry.players = window.players;
+        console.log('Loaded players for voice:', voiceGameEntry.players.length);
+    }
+}
+
+/**
+ * Check if current sport supports doubles
+ */
+function sportSupportsDoubles() {
+    const sportConfig = window.getSportConfig ? window.getSportConfig(window.currentSport) : null;
+    return sportConfig && sportConfig.gameTypes && sportConfig.gameTypes.includes('doubles');
+}
+
+/**
+ * Check if current sport supports singles
+ */
+function sportSupportsSingles() {
+    const sportConfig = window.getSportConfig ? window.getSportConfig(window.currentSport) : null;
+    return sportConfig && sportConfig.gameTypes && sportConfig.gameTypes.includes('singles');
+}
+
+/**
+ * Open voice game modal
+ */
+function openVoiceGameModal() {
+    loadPlayersForVoice();
+
+    // Reset state
+    voiceGameEntry.currentStep = 1;
+    voiceGameEntry.isActive = true;
+    voiceGameEntry.gameData = {
+        game_date: new Date(),
+        game_type: 'singles',
+        opponent_id: null,
+        opponent_name: null,
+        opponent2_id: null,
+        opponent2_name: null,
+        partner_id: null,
+        partner_name: null,
+        result: null,
+        score: null,
+        location: null,
+        notes: null
+    };
+
+    // Check sport capabilities
+    const supportsDoubles = sportSupportsDoubles();
+    const supportsSingles = sportSupportsSingles();
+
+    // Auto-select game type if only one is available
+    if (supportsDoubles && !supportsSingles) {
+        voiceGameEntry.gameData.game_type = 'doubles';
+    } else if (supportsSingles && !supportsDoubles) {
+        voiceGameEntry.gameData.game_type = 'singles';
+    }
+
+    // Create modal
+    let modal = document.getElementById('voiceGameModal');
+    if (modal) modal.remove();
+    modal = createVoiceGameModal();
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+
+    attachVoiceGameEventListeners();
+
+    // Start first step
+    setTimeout(() => runVoiceGameStep(1), 500);
+}
+
+/**
+ * Create modal HTML
+ */
+function createVoiceGameModal() {
+    const modal = document.createElement('div');
+    modal.id = 'voiceGameModal';
+    modal.className = 'modal voice-game-modal';
+
+    modal.innerHTML = `
+        <div class="modal-content voice-game-content">
+            <div class="modal-header">
+                <h2>${getVoiceGameText('modalTitle')}</h2>
+                <span class="close" id="voiceGameCloseX">&times;</span>
+            </div>
+            <div class="voice-game-body">
+                <div class="voice-game-status">
+                    <div class="voice-game-step" id="voiceGameStep">1/8</div>
+                    <div class="voice-game-prompt" id="voiceGamePrompt"></div>
+                    <div class="voice-game-indicator" id="voiceGameIndicator" onclick="restartVoiceListening()" title="${getVoiceGameText('btnRetry')}">
+                        <div class="voice-wave"></div>
+                    </div>
+                    <div class="voice-game-response" id="voiceGameResponse"></div>
+                    <div class="voice-game-manual-input" id="voiceGameManualInput" style="display: none;">
+                        <div class="manual-buttons" id="voiceGameYesNoButtons" style="display: none;">
+                            <button type="button" class="btn-yes" id="voiceGameYesBtn">${getVoiceGameText('btnYes')}</button>
+                            <button type="button" class="btn-no" id="voiceGameNoBtn">${getVoiceGameText('btnNo')}</button>
+                        </div>
+                        <div class="manual-buttons" id="voiceGameTypeButtons" style="display: none;">
+                            <button type="button" class="btn-primary" id="voiceGameSinglesBtn">${getVoiceGameText('btnSingles')}</button>
+                            <button type="button" class="btn-primary" id="voiceGameDoublesBtn">${getVoiceGameText('btnDoubles')}</button>
+                        </div>
+                        <div class="manual-buttons" id="voiceGameResultButtons" style="display: none;">
+                            <button type="button" class="btn-win" id="voiceGameWinBtn">${getVoiceGameText('btnWon')}</button>
+                            <button type="button" class="btn-lose" id="voiceGameLoseBtn">${getVoiceGameText('btnLost')}</button>
+                            <button type="button" class="btn-draw" id="voiceGameDrawBtn">${getVoiceGameText('btnDraw')}</button>
+                        </div>
+                        <div class="manual-text-input" id="voiceGameTextInput" style="display: none;">
+                            <input type="text" id="voiceGameTextInputField" placeholder="${getVoiceGameText('inputPlaceholder')}">
+                            <button type="button" class="btn-primary" id="voiceGameTextInputBtn">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="voiceGameCancelBtn">${getVoiceGameText('btnCancel')}</button>
+                <button type="button" class="btn-secondary" id="voiceGameSkipBtn" style="display: none;">${getVoiceGameText('btnSkip')}</button>
+                <button type="button" class="btn-primary" id="voiceGameRetryBtn" style="display: none;">${getVoiceGameText('btnRetry')}</button>
+                <button type="button" class="btn-secondary" id="voiceGameKeyboardBtn">${getVoiceGameText('btnKeyboard')}</button>
+            </div>
+        </div>
+    `;
+    return modal;
+}
+
+/**
+ * Attach event listeners
+ */
+function attachVoiceGameEventListeners() {
+    document.getElementById('voiceGameCancelBtn').onclick = () => closeVoiceGameModal();
+    document.getElementById('voiceGameCloseX').onclick = () => closeVoiceGameModal();
+    document.getElementById('voiceGameSkipBtn').onclick = () => skipVoiceGameStep();
+    document.getElementById('voiceGameRetryBtn').onclick = () => retryVoiceGameStep();
+    document.getElementById('voiceGameKeyboardBtn').onclick = () => toggleManualInput();
+
+    document.getElementById('voiceGameYesBtn').onclick = () => handleManualInput(getVoiceGameText('yes')[0]);
+    document.getElementById('voiceGameNoBtn').onclick = () => handleManualInput(getVoiceGameText('no')[0]);
+    document.getElementById('voiceGameWinBtn').onclick = () => handleManualInput(getVoiceGameText('won')[0]);
+    document.getElementById('voiceGameLoseBtn').onclick = () => handleManualInput(getVoiceGameText('lost')[0]);
+    document.getElementById('voiceGameDrawBtn').onclick = () => handleManualInput(getVoiceGameText('draw')[0]);
+    document.getElementById('voiceGameSinglesBtn').onclick = () => handleManualInput('singles');
+    document.getElementById('voiceGameDoublesBtn').onclick = () => handleManualInput('doubles');
+
+    document.getElementById('voiceGameTextInputBtn').onclick = () => {
+        const input = document.getElementById('voiceGameTextInputField');
+        if (input.value.trim()) {
+            handleManualInput(input.value.trim());
+            input.value = '';
+        }
+    };
+
+    document.getElementById('voiceGameTextInputField').onkeypress = (e) => {
+        if (e.key === 'Enter' && e.target.value.trim()) {
+            handleManualInput(e.target.value.trim());
+            e.target.value = '';
+        }
+    };
+}
+
+/**
+ * Toggle manual input
+ */
+function toggleManualInput() {
+    const manualInput = document.getElementById('voiceGameManualInput');
+    const step = voiceGameEntry.currentStep;
+
+    if (manualInput.style.display === 'none') {
+        manualInput.style.display = 'block';
+        document.getElementById('voiceGameYesNoButtons').style.display = 'none';
+        document.getElementById('voiceGameTypeButtons').style.display = 'none';
+        document.getElementById('voiceGameResultButtons').style.display = 'none';
+        document.getElementById('voiceGameTextInput').style.display = 'none';
+
+        if (step === 1 || step === 7 || step === 8) {
+            document.getElementById('voiceGameYesNoButtons').style.display = 'flex';
+        } else if (step === 2) {
+            document.getElementById('voiceGameTypeButtons').style.display = 'flex';
+        } else if (step === 4) {
+            document.getElementById('voiceGameResultButtons').style.display = 'flex';
+        } else {
+            document.getElementById('voiceGameTextInput').style.display = 'flex';
+        }
+    } else {
+        manualInput.style.display = 'none';
+    }
+}
+
+/**
+ * Handle manual input
+ */
+function handleManualInput(value) {
+    if (voiceGameEntry.recognition) {
+        try { voiceGameEntry.recognition.abort(); } catch(e) {}
+    }
+    document.getElementById('voiceGameManualInput').style.display = 'none';
+    processVoiceGameInput(voiceGameEntry.currentStep, value);
+}
+
+/**
+ * Close modal
+ */
+function closeVoiceGameModal() {
+    voiceGameEntry.isActive = false;
+    clearListeningTimeout();
+    if (voiceGameEntry.recognition) {
+        try { voiceGameEntry.recognition.abort(); } catch(e) {}
+        voiceGameEntry.recognition = null;
+    }
+    const modal = document.getElementById('voiceGameModal');
+    if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Clear listening timeout
+ */
+function clearListeningTimeout() {
+    if (voiceGameEntry.listeningTimeout) {
+        clearTimeout(voiceGameEntry.listeningTimeout);
+        voiceGameEntry.listeningTimeout = null;
+    }
+}
+
+/**
+ * Run step
+ */
+function runVoiceGameStep(step) {
+    voiceGameEntry.currentStep = step;
+    const stepEl = document.getElementById('voiceGameStep');
+    const promptEl = document.getElementById('voiceGamePrompt');
+    const responseEl = document.getElementById('voiceGameResponse');
+    const skipBtn = document.getElementById('voiceGameSkipBtn');
+
+    // Calculate total steps based on game type
+    const isDoubles = voiceGameEntry.gameData.game_type === 'doubles';
+    const totalSteps = isDoubles ? 8 : 8; // Both have 8 steps (doubles has 3b and 3c)
+
+    stepEl.textContent = `${step}/8`;
+    responseEl.textContent = '';
+    skipBtn.style.display = 'none';
+
+    let prompt = '';
+    const supportsDoubles = sportSupportsDoubles();
+    const supportsSingles = sportSupportsSingles();
+
+    switch(step) {
+        case 1: // Date
+            prompt = getVoiceGameText('step1_prompt')
+                .replace('{date}', formatDateForVoice(voiceGameEntry.gameData.game_date));
+            break;
+
+        case 2: // Game type (skip if sport only supports one type)
+            if (!supportsDoubles || !supportsSingles) {
+                // Auto-skip to step 3
+                setTimeout(() => runVoiceGameStep(3), 100);
+                return;
+            }
+            prompt = getVoiceGameText('step2_prompt');
+            break;
+
+        case 3: // Opponent
+            prompt = getVoiceGameText('step3_prompt');
+            break;
+
+        case '3b': // Second opponent (doubles only)
+            prompt = getVoiceGameText('step3b_prompt');
+            break;
+
+        case '3c': // Partner (doubles only)
+            prompt = getVoiceGameText('step3c_prompt');
+            break;
+
+        case 4: // Result
+            prompt = getVoiceGameText('step4_prompt');
+            break;
+
+        case 5: // Score (optional)
+            prompt = getVoiceGameText('step5_prompt');
+            skipBtn.style.display = 'inline-block';
+            break;
+
+        case 6: // Location (optional)
+            prompt = getVoiceGameText('step6_prompt');
+            skipBtn.style.display = 'inline-block';
+            break;
+
+        case 7: // Notes (optional)
+            prompt = getVoiceGameText('step7_prompt');
+            skipBtn.style.display = 'inline-block';
+            break;
+
+        case 8: // Confirmation
+            const result = voiceGameEntry.gameData.result === 'win' ? getVoiceGameText('labelVictory') :
+                          voiceGameEntry.gameData.result === 'loss' ? getVoiceGameText('labelDefeat') :
+                          getVoiceGameText('labelDraw');
+
+            const gameTypeLabel = voiceGameEntry.gameData.game_type === 'doubles' ?
+                getVoiceGameText('labelDoubles') : getVoiceGameText('labelSingles');
+
+            let playersText = voiceGameEntry.gameData.opponent_name;
+            if (voiceGameEntry.gameData.game_type === 'doubles') {
+                playersText = `vs ${voiceGameEntry.gameData.opponent_name} & ${voiceGameEntry.gameData.opponent2_name}`;
+                playersText += `\n🤝 ${voiceGameEntry.gameData.partner_name}`;
+            }
+
+            const scoreText = voiceGameEntry.gameData.score ? `\n📊 ${voiceGameEntry.gameData.score}` : '';
+            const locationText = voiceGameEntry.gameData.location ? `\n📍 ${voiceGameEntry.gameData.location}` : '';
+
+            prompt = getVoiceGameText('step8_prompt')
+                .replace('{date}', formatDateForVoice(voiceGameEntry.gameData.game_date))
+                .replace('{gameType}', gameTypeLabel)
+                .replace('{players}', playersText)
+                .replace('{result}', result)
+                .replace('{score}', scoreText)
+                .replace('{location}', locationText);
+            break;
+    }
+
+    promptEl.innerHTML = prompt.replace(/\n/g, '<br>');
+    setTimeout(() => startVoiceGameListening(step), 500);
+}
+
+/**
+ * Start listening
+ */
+function startVoiceGameListening(step) {
+    clearListeningTimeout();
+    if (!voiceGameEntry.recognition) {
+        voiceGameEntry.recognition = initVoiceGameRecognition();
+    }
+    if (!voiceGameEntry.recognition) {
+        showVoiceGameError(getVoiceGameText('errorMicrophone'));
+        return;
+    }
+
+    const indicatorEl = document.getElementById('voiceGameIndicator');
+    const responseEl = document.getElementById('voiceGameResponse');
+    const retryBtn = document.getElementById('voiceGameRetryBtn');
+
+    indicatorEl.classList.add('listening');
+    responseEl.textContent = getVoiceGameText('listening');
+    retryBtn.style.display = 'none';
+    document.getElementById('voiceGameManualInput').style.display = 'none';
+
+    voiceGameEntry.recognition.lang = getVoiceGameLang();
+    let gotResponse = false;
+
+    voiceGameEntry.recognition.onresult = (event) => {
+        gotResponse = true;
+        clearListeningTimeout();
+        const transcript = event.results[0][0].transcript;
+        indicatorEl.classList.remove('listening');
+        responseEl.textContent = `"${transcript}"`;
+        processVoiceGameInput(step, transcript);
+    };
+
+    voiceGameEntry.recognition.onerror = (event) => {
+        gotResponse = true;
+        clearListeningTimeout();
+        indicatorEl.classList.remove('listening');
+        if (event.error === 'aborted') return;
+        responseEl.textContent = event.error === 'no-speech' ?
+            getVoiceGameText('errorNoSpeech') : getVoiceGameText('errorMicrophone');
+        retryBtn.style.display = 'inline-block';
+        setTimeout(() => toggleManualInput(), 500);
+    };
+
+    voiceGameEntry.recognition.onend = () => {
+        indicatorEl.classList.remove('listening');
+        if (!gotResponse) {
+            clearListeningTimeout();
+            responseEl.textContent = getVoiceGameText('errorMicStuck');
+            retryBtn.style.display = 'inline-block';
+            setTimeout(() => toggleManualInput(), 300);
+        }
+    };
+
+    try {
+        voiceGameEntry.recognition.start();
+        voiceGameEntry.listeningTimeout = setTimeout(() => {
+            if (!gotResponse) {
+                indicatorEl.classList.remove('listening');
+                responseEl.textContent = getVoiceGameText('errorMicStuck');
+                retryBtn.style.display = 'inline-block';
+                setTimeout(() => toggleManualInput(), 300);
+            }
+        }, 8000);
+    } catch (e) {
+        clearListeningTimeout();
+        indicatorEl.classList.remove('listening');
+        retryBtn.style.display = 'inline-block';
+        setTimeout(() => toggleManualInput(), 500);
+    }
+}
+
+/**
+ * Restart voice listening
+ */
+function restartVoiceListening() {
+    clearListeningTimeout();
+    if (voiceGameEntry.recognition) {
+        try { voiceGameEntry.recognition.abort(); } catch(e) {}
+        voiceGameEntry.recognition = null;
+    }
+    document.getElementById('voiceGameManualInput').style.display = 'none';
+    document.getElementById('voiceGameRetryBtn').style.display = 'none';
+    setTimeout(() => startVoiceGameListening(voiceGameEntry.currentStep), 200);
+}
+
+/**
+ * Retry step
+ */
+function retryVoiceGameStep() {
+    runVoiceGameStep(voiceGameEntry.currentStep);
+}
+
+/**
+ * Skip step
+ */
+function skipVoiceGameStep() {
+    const step = voiceGameEntry.currentStep;
+    const responseEl = document.getElementById('voiceGameResponse');
+
+    if (step === 5) {
+        responseEl.textContent = getVoiceGameText('step5_skipped');
+        setTimeout(() => runVoiceGameStep(6), 1000);
+    } else if (step === 6) {
+        responseEl.textContent = getVoiceGameText('step6_skipped');
+        setTimeout(() => runVoiceGameStep(7), 1000);
+    } else if (step === 7) {
+        responseEl.textContent = getVoiceGameText('step7_skipped');
+        setTimeout(() => runVoiceGameStep(8), 1000);
+    }
+}
+
+/**
+ * Process voice input
+ */
+function processVoiceGameInput(step, transcript) {
+    const responseEl = document.getElementById('voiceGameResponse');
+    const setResponse = (text) => { responseEl.innerHTML = text.replace(/\n/g, '<br>'); };
+
+    switch(step) {
+        case 1: // Date
+            if (matchesKeywords(transcript, 'yes')) {
+                setResponse(getVoiceGameText('step1_confirm')
+                    .replace('{date}', formatDateForVoice(voiceGameEntry.gameData.game_date)));
+                setTimeout(() => runVoiceGameStep(2), 1500);
+            } else {
+                const newDate = parseDateFromVoice(transcript);
+                if (newDate) {
+                    voiceGameEntry.gameData.game_date = newDate;
+                    setResponse(getVoiceGameText('step1_updated')
+                        .replace('{date}', formatDateForVoice(newDate)));
+                    setTimeout(() => runVoiceGameStep(2), 1500);
+                } else {
+                    setResponse(getVoiceGameText('errorNotUnderstood'));
+                    document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+                }
+            }
+            break;
+
+        case 2: // Game type
+            if (matchesKeywords(transcript, 'singles') || transcript.toLowerCase() === 'singles') {
+                voiceGameEntry.gameData.game_type = 'singles';
+                setResponse(getVoiceGameText('step2_singles'));
+                setTimeout(() => runVoiceGameStep(3), 1500);
+            } else if (matchesKeywords(transcript, 'doubles') || transcript.toLowerCase() === 'doubles') {
+                voiceGameEntry.gameData.game_type = 'doubles';
+                setResponse(getVoiceGameText('step2_doubles'));
+                setTimeout(() => runVoiceGameStep(3), 1500);
+            } else {
+                setResponse(getVoiceGameText('errorNotUnderstood'));
+                document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+            }
+            break;
+
+        case 3: // Opponent
+            handlePlayerSearch(transcript, 'opponent', (player) => {
+                voiceGameEntry.gameData.opponent_id = player.id;
+                voiceGameEntry.gameData.opponent_name = player.name;
+                setResponse(getVoiceGameText('step3_confirmed').replace('{name}', player.name));
+
+                if (voiceGameEntry.gameData.game_type === 'doubles') {
+                    setTimeout(() => runVoiceGameStep('3b'), 1500);
+                } else {
+                    setTimeout(() => runVoiceGameStep(4), 1500);
+                }
+            });
+            break;
+
+        case '3b': // Second opponent (doubles)
+            handlePlayerSearch(transcript, 'opponent2', (player) => {
+                voiceGameEntry.gameData.opponent2_id = player.id;
+                voiceGameEntry.gameData.opponent2_name = player.name;
+                setResponse(getVoiceGameText('step3b_confirmed').replace('{name}', player.name));
+                setTimeout(() => runVoiceGameStep('3c'), 1500);
+            });
+            break;
+
+        case '3c': // Partner (doubles)
+            handlePlayerSearch(transcript, 'partner', (player) => {
+                voiceGameEntry.gameData.partner_id = player.id;
+                voiceGameEntry.gameData.partner_name = player.name;
+                setResponse(getVoiceGameText('step3c_confirmed').replace('{name}', player.name));
+                setTimeout(() => runVoiceGameStep(4), 1500);
+            });
+            break;
+
+        case 4: // Result
+            if (matchesKeywords(transcript, 'won')) {
+                voiceGameEntry.gameData.result = 'win';
+                setResponse(getVoiceGameText('step4_won'));
+                setTimeout(() => runVoiceGameStep(5), 1500);
+            } else if (matchesKeywords(transcript, 'lost')) {
+                voiceGameEntry.gameData.result = 'loss';
+                setResponse(getVoiceGameText('step4_lost'));
+                setTimeout(() => runVoiceGameStep(5), 1500);
+            } else if (matchesKeywords(transcript, 'draw')) {
+                voiceGameEntry.gameData.result = 'draw';
+                setResponse(getVoiceGameText('step4_draw'));
+                setTimeout(() => runVoiceGameStep(5), 1500);
+            } else {
+                setResponse(getVoiceGameText('errorNotUnderstood'));
+                document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+            }
+            break;
+
+        case 5: // Score
+            if (matchesKeywords(transcript, 'skip') || matchesKeywords(transcript, 'no')) {
+                setResponse(getVoiceGameText('step5_skipped'));
+                setTimeout(() => runVoiceGameStep(6), 1500);
+            } else {
+                voiceGameEntry.gameData.score = transcript;
+                setResponse(getVoiceGameText('step5_confirmed').replace('{score}', transcript));
+                setTimeout(() => runVoiceGameStep(6), 1500);
+            }
+            break;
+
+        case 6: // Location
+            if (matchesKeywords(transcript, 'skip') || matchesKeywords(transcript, 'no')) {
+                setResponse(getVoiceGameText('step6_skipped'));
+                setTimeout(() => runVoiceGameStep(7), 1500);
+            } else {
+                voiceGameEntry.gameData.location = transcript;
+                setResponse(getVoiceGameText('step6_saved').replace('{location}', transcript));
+                setTimeout(() => runVoiceGameStep(7), 1500);
+            }
+            break;
+
+        case 7: // Notes
+            if (matchesKeywords(transcript, 'yes')) {
+                voiceGameEntry.recordingObservations = true;
+                startRecordingObservations();
+            } else if (matchesKeywords(transcript, 'no') || matchesKeywords(transcript, 'skip')) {
+                setResponse(getVoiceGameText('step7_skipped'));
+                setTimeout(() => runVoiceGameStep(8), 1500);
+            } else {
+                voiceGameEntry.pendingObservation = transcript;
+                showObservationConfirmation(transcript);
+            }
+            break;
+
+        case 8: // Confirmation
+            if (matchesKeywords(transcript, 'yes')) {
+                saveVoiceGame();
+            } else if (matchesKeywords(transcript, 'no')) {
+                setResponse(getVoiceGameText('step8_cancelled'));
+                setTimeout(() => closeVoiceGameModal(), 1500);
+            } else {
+                setResponse(getVoiceGameText('errorNotUnderstood'));
+                document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+            }
+            break;
+    }
+}
+
+/**
+ * Handle player search
+ */
+function handlePlayerSearch(transcript, playerType, onSelect) {
+    const responseEl = document.getElementById('voiceGameResponse');
+    const matches = searchPlayerByVoice(transcript);
+
+    if (matches.length === 1) {
+        responseEl.innerHTML = getVoiceGameText('step3_found')
+            .replace('{name}', matches[0].name).replace(/\n/g, '<br>');
+        showPlayerOptions(matches, onSelect);
+    } else if (matches.length > 1) {
+        responseEl.innerHTML = getVoiceGameText('step3_multiple')
+            .replace('{count}', matches.length).replace(/\n/g, '<br>');
+        showPlayerOptions(matches, onSelect);
+    } else {
+        responseEl.innerHTML = getVoiceGameText('step3_notFound')
+            .replace('{name}', transcript).replace(/\n/g, '<br>');
+        document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+        toggleManualInput();
+    }
+}
+
+/**
+ * Show player options as buttons
+ */
+function showPlayerOptions(players, onSelect) {
+    const responseEl = document.getElementById('voiceGameResponse');
+    const container = document.createElement('div');
+    container.style.cssText = 'display: flex; flex-direction: column; gap: 10px; margin-top: 15px;';
+
+    players.forEach(player => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-opponent-option';
+        btn.textContent = player.name;
+        btn.onclick = () => onSelect(player);
+        container.appendChild(btn);
+    });
+
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'btn-secondary';
+    retryBtn.style.marginTop = '10px';
+    retryBtn.textContent = getVoiceGameText('btnTryOtherName');
+    retryBtn.onclick = () => runVoiceGameStep(voiceGameEntry.currentStep);
+    container.appendChild(retryBtn);
+
+    responseEl.appendChild(container);
+}
+
+/**
+ * Start recording observations
+ */
+function startRecordingObservations() {
+    clearListeningTimeout();
+    const responseEl = document.getElementById('voiceGameResponse');
+    const indicatorEl = document.getElementById('voiceGameIndicator');
+
+    responseEl.innerHTML = getVoiceGameText('step7_recording');
+
+    if (voiceGameEntry.recognition) {
+        try { voiceGameEntry.recognition.abort(); } catch(e) {}
+        voiceGameEntry.recognition = null;
+    }
+
+    setTimeout(() => {
+        voiceGameEntry.recognition = initVoiceGameRecognition();
+        if (!voiceGameEntry.recognition) {
+            voiceGameEntry.recordingObservations = false;
+            responseEl.textContent = getVoiceGameText('errorMicrophone');
+            return;
+        }
+
+        indicatorEl.classList.add('listening');
+
+        voiceGameEntry.recognition.onresult = (event) => {
+            voiceGameEntry.recordingObservations = false;
+            clearListeningTimeout();
+            indicatorEl.classList.remove('listening');
+            voiceGameEntry.pendingObservation = event.results[0][0].transcript;
+            showObservationConfirmation(voiceGameEntry.pendingObservation);
+        };
+
+        voiceGameEntry.recognition.onerror = (event) => {
+            voiceGameEntry.recordingObservations = false;
+            clearListeningTimeout();
+            indicatorEl.classList.remove('listening');
+            if (event.error !== 'aborted') {
+                responseEl.textContent = getVoiceGameText('errorMicrophone');
+            }
+        };
+
+        voiceGameEntry.recognition.onend = () => {
+            indicatorEl.classList.remove('listening');
+        };
+
+        try {
+            voiceGameEntry.recognition.start();
+            voiceGameEntry.listeningTimeout = setTimeout(() => {
+                voiceGameEntry.recordingObservations = false;
+                indicatorEl.classList.remove('listening');
+                responseEl.textContent = getVoiceGameText('errorMicStuck');
+            }, 8000);
+        } catch(e) {
+            voiceGameEntry.recordingObservations = false;
+            responseEl.textContent = getVoiceGameText('errorMicrophone');
+        }
+    }, 500);
+}
+
+/**
+ * Show observation confirmation
+ */
+function showObservationConfirmation(transcript) {
+    const responseEl = document.getElementById('voiceGameResponse');
+    responseEl.innerHTML = getVoiceGameText('step7_confirm').replace('{text}', transcript);
+
+    const container = document.createElement('div');
+    container.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center;';
+
+    const yesBtn = document.createElement('button');
+    yesBtn.type = 'button';
+    yesBtn.className = 'btn-primary';
+    yesBtn.innerHTML = getVoiceGameText('btnYes');
+    yesBtn.onclick = () => {
+        voiceGameEntry.gameData.notes = voiceGameEntry.pendingObservation;
+        responseEl.innerHTML = getVoiceGameText('step7_saved');
+        setTimeout(() => runVoiceGameStep(8), 1500);
+    };
+    container.appendChild(yesBtn);
+
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'btn-secondary';
+    retryBtn.innerHTML = getVoiceGameText('btnRetryObservation');
+    retryBtn.onclick = () => startRecordingObservations();
+    container.appendChild(retryBtn);
+
+    const skipBtn = document.createElement('button');
+    skipBtn.type = 'button';
+    skipBtn.className = 'btn-secondary';
+    skipBtn.innerHTML = getVoiceGameText('btnSkip');
+    skipBtn.onclick = () => {
+        voiceGameEntry.gameData.notes = null;
+        responseEl.innerHTML = getVoiceGameText('step7_skipped');
+        setTimeout(() => runVoiceGameStep(8), 1500);
+    };
+    container.appendChild(skipBtn);
+
+    responseEl.appendChild(container);
+}
+
+/**
+ * Save game via API
+ */
+async function saveVoiceGame() {
+    const responseEl = document.getElementById('voiceGameResponse');
+    responseEl.innerHTML = getVoiceGameText('processing');
+
+    try {
+        const token = window.currentToken || localStorage.getItem('token');
+        const sport = window.currentSport;
+
+        const gameDate = voiceGameEntry.gameData.game_date;
+        const formattedDate = `${gameDate.getFullYear()}-${String(gameDate.getMonth() + 1).padStart(2, '0')}-${String(gameDate.getDate()).padStart(2, '0')}`;
+
+        const gameData = {
+            sport: sport,
+            game_type: voiceGameEntry.gameData.game_type,
+            opponent_id: voiceGameEntry.gameData.opponent_id,
+            opponent2_id: voiceGameEntry.gameData.opponent2_id,
+            partner_id: voiceGameEntry.gameData.partner_id,
+            game_date: formattedDate,
+            result: voiceGameEntry.gameData.result,
+            score: voiceGameEntry.gameData.score,
+            location: voiceGameEntry.gameData.location,
+            notes: voiceGameEntry.gameData.notes
+        };
+
+        const response = await fetch(`${API_URL}/api/games`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(gameData)
+        });
+
+        if (response.ok) {
+            responseEl.innerHTML = getVoiceGameText('step8_saved');
+            if (typeof loadGames === 'function') loadGames();
+            if (typeof loadStatistics === 'function') loadStatistics();
+            setTimeout(() => closeVoiceGameModal(), 2000);
+        } else {
+            const error = await response.json();
+            responseEl.textContent = `❌ Erro: ${error.detail || 'Falha ao salvar'}`;
+            document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+        }
+    } catch (error) {
+        console.error('Error saving game:', error);
+        responseEl.textContent = `❌ Erro: ${error.message}`;
+        document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+    }
+}
+
+/**
+ * Show error
+ */
+function showVoiceGameError(message) {
+    const responseEl = document.getElementById('voiceGameResponse');
+    if (responseEl) responseEl.textContent = message;
+    document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+}
+
+// Export to global scope
+window.openVoiceGameModal = openVoiceGameModal;
+window.closeVoiceGameModal = closeVoiceGameModal;
+window.restartVoiceListening = restartVoiceListening;

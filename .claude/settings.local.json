@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3:*)",
+      "Bash(dir \"C:\\Users\\aokub\\OneDrive\\racket-pro-analyzer\" /s /b)",
+      "Bash(pip install:*)",
+      "Bash(python -m uvicorn:*)",
+      "Bash(tree:*)",
+      "Bash(dir /b \"C:\\Users\\aokub\\OneDrive\\racket-pro-analyzer\\static\\images\")",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
