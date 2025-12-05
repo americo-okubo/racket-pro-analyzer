@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="donate.title">Apoie o Racket Pro Analyzer</title>
+    <script src="/static/js/i18n.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin: 20px 0;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .hero h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        /* Tab System */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #3498db;
+        }
+
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #219a52;
+        }
+
+        /* Suggested amounts */
+        .amount-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .amount-btn {
+            padding: 15px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .amount-btn:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .amount-btn.selected {
+            border-color: #3498db;
+            background: #e3f2fd;
+            font-weight: bold;
+        }
+
+        /* Sponsor Tiers */
+        .sponsor-tiers {
+            display: grid;
+            gap: 20px;
+        }
+
+        .tier-card {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            position: relative;
+        }
+
+        .tier-card.master {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+        }
+
+        .tier-card.gold {
+            border-color: #ffa500;
+            background: linear-gradient(135deg, #fff4e6 0%, #ffffff 100%);
+        }
+
+        .tier-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .tier-badge.master {
+            background: #ffd700;
+            color: #000;
+        }
+
+        .tier-badge.gold {
+            background: #ffa500;
+            color: #fff;
+        }
+
+        .benefits-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .benefits-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .benefits-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .availability {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .availability.available {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .availability.full {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Reference Code Display */
+        .reference-code {
+            background: #fff9e6;
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .reference-code .code {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #ff6f00;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+
+        .pix-key {
+            background: #f0f9f8;
+            border: 1px solid #32bcad;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 1.1em;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #32bcad;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .copy-btn:hover {
+            background: #28a896;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .hero h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="back-link"><span data-i18n="donate.backLink">← Voltar</span></a>
+
+        <div class="hero">
+            <h1 data-i18n="donate.heroTitle">Apoie o Racket Pro Analyzer</h1>
+            <p data-i18n="donate.heroSubtitle">Ajude a manter este projeto gratuito e acessível para todos</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('individual')">
+                <span data-i18n="donate.tabIndividual">Apoio Individual</span>
+            </button>
+            <button class="tab" onclick="switchTab('sponsorship')">
+                <span data-i18n="donate.tabSponsorship">Patrocínio</span>
+            </button>
+        </div>
+
+        <!-- Individual Support Tab -->
+        <div id="individual" class="tab-content active">
+            <div class="card">
+                <h2 data-i18n="donate.individualTitle">Apoio Individual</h2>
+                <p data-i18n="donate.individualIntro">Faça uma doação e ajude a manter o Racket Pro Analyzer funcionando!</p>
+
+                <!-- Region Info -->
+                <div style="background: #e3f2fd; border-left: 4px solid #1976d2; padding: 15px; margin: 20px 0; border-radius: 6px;">
+                    <p style="margin: 0; font-weight: 500;" data-i18n="donate.regionInfo">
+                        Esta página aceita doações para a região Brasil (PIX em BRL).
+                    </p>
+                </div>
+
+                <!-- Thank You Message from Americo -->
+                <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 20px; margin: 20px 0; border-radius: 6px;">
+                    <p style="margin: 0 0 10px 0; font-style: italic;" data-i18n="donate.thankYouMessage">
+                        "Muito obrigado por considerar apoiar o Racket Pro Analyzer! Cada doação, independente do valor, faz toda a diferença
+                        para manter este projeto gratuito e continuar desenvolvendo novas funcionalidades para a comunidade de esportes de raquete."
+                    </p>
+                    <p style="margin: 0; font-weight: 600; text-align: right;" data-i18n="donate.thankYouSignature">
+                        — Americo Okubo, Desenvolvedor
+                    </p>
+                </div>
+
+                <form id="donationForm" style="margin-top: 30px;">
+                    <div class="form-group">
+                        <label data-i18n="donate.yourName">Seu Nome:</label>
+                        <input type="text" id="donorName" required data-i18n-placeholder="donate.namePlaceholder">
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="donate.yourEmail">Seu E-mail (opcional):</label>
+                        <input type="email" id="donorEmail" data-i18n-placeholder="donate.emailPlaceholder">
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="donate.amount">Valor da Doação:</label>
+                        <div class="amount-options" id="amountOptions">
+                            <div class="amount-btn" onclick="selectAmount(10)">
+                                <span id="amt1">R$ 10</span>
+                            </div>
+                            <div class="amount-btn" onclick="selectAmount(25)">
+                                <span id="amt2">R$ 25</span>
+                            </div>
+                            <div class="amount-btn" onclick="selectAmount(50)">
+                                <span id="amt3">R$ 50</span>
+                            </div>
+                            <div class="amount-btn" onclick="selectAmount(100)">
+                                <span id="amt4">R$ 100</span>
+                            </div>
+                        </div>
+                        <input type="number" id="customAmount" data-i18n-placeholder="donate.customAmountPlaceholder" min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; width: auto;">
+                            <input type="checkbox" id="isAnonymous" style="margin: 0; width: auto; flex-shrink: 0;">
+                            <span data-i18n="donate.anonymous" style="white-space: nowrap;">Quero doar anonimamente</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="donate.message">Mensagem (opcional):</label>
+                        <textarea id="message" data-i18n-placeholder="donate.messagePlaceholder"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        <span data-i18n="donate.generateCode">Gerar Código de Doação</span>
+                    </button>
+                </form>
+
+                <!-- Reference Code Display (hidden initially) -->
+                <div id="referenceCodeSection" style="display: none;">
+                    <div class="reference-code">
+                        <h3 data-i18n="donate.codeGenerated">Código Gerado!</h3>
+                        <div class="code" id="referenceCode"></div>
+                        <p data-i18n="donate.codeInstructions">Use este código ao fazer a doação via PIX ou PayPal</p>
+                    </div>
+
+                    <!-- PIX Section -->
+                    <div class="card">
+                        <h2>PIX (Brasil)</h2>
+                        <p><strong>Chave PIX (E-mail):</strong></p>
+                        <div class="pix-key">aokubo@gmail.com</div>
+                        <button class="copy-btn" onclick="copyPixKey()">Copiar Chave PIX</button>
+                        <p style="color: #666; margin-top: 15px; font-size: 0.9em;">
+                            <strong data-i18n="donate.importantPix">Importante:</strong>
+                            <span data-i18n="donate.includeCode">Inclua o código acima na descrição do PIX</span>
+                        </p>
+                    </div>
+
+                    <!-- PayPal Section -->
+                    <div class="card">
+                        <h2>PayPal (Internacional)</h2>
+                        <a href="https://www.paypal.com/donate/?business=aokubo@gmail.com&currency_code=USD"
+                           target="_blank"
+                           class="btn"
+                           style="display: inline-block; text-decoration: none;">
+                            Doar via PayPal
+                        </a>
+                        <p style="color: #666; margin-top: 15px; font-size: 0.9em;">
+                            <span data-i18n="donate.includeCodePaypal">Inclua o código de referência no comentário da doação</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Why Donate -->
+            <div class="card">
+                <h2 data-i18n="donate.whyDonateTitle">Por que apoiar?</h2>
+                <ul class="benefits-list">
+                    <li data-i18n="donate.benefit1">Manter os servidores rodando</li>
+                    <li data-i18n="donate.benefit2">Desenvolver novas funcionalidades</li>
+                    <li data-i18n="donate.benefit3">Melhorar a análise de dados</li>
+                    <li data-i18n="donate.benefit4">Manter o app sem anúncios</li>
+                    <li data-i18n="donate.benefit5">Dedicar mais tempo ao desenvolvimento</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Sponsorship Tab -->
+        <div id="sponsorship" class="tab-content">
+            <div class="card">
+                <h2 data-i18n="donate.sponsorshipTitle">Patrocínio Empresarial</h2>
+                <p data-i18n="donate.sponsorshipIntro">Seu produto/serviço visto por jogadores de esportes de raquete!</p>
+            </div>
+
+            <!-- Sponsor Tiers -->
+            <div class="sponsor-tiers">
+                <!-- Master Tier -->
+                <div class="tier-card master">
+                    <span class="tier-badge master">MASTER SPONSOR</span>
+                    <h3 id="masterPrice">R$ 500/mês</h3>
+                    <ul class="benefits-list">
+                        <li data-i18n="donate.masterBenefit1">Logo compacto no header (mobile + desktop)</li>
+                        <li data-i18n="donate.masterBenefit2">Card destacado no topo da homepage</li>
+                        <li data-i18n="donate.masterBenefit3">Post mensal em redes sociais</li>
+                        <li data-i18n="donate.masterBenefit4">Destaque em newsletter</li>
+                        <li><strong data-i18n="donate.exclusive">Exclusividade: 1 sponsor por região</strong></li>
+                    </ul>
+                    <div class="availability available" id="masterAvailability">
+                        <span data-i18n="donate.available">Disponível</span>
+                    </div>
+                    <button class="btn" onclick="requestSponsorship('master')" style="width: 100%; margin-top: 15px;">
+                        <span data-i18n="donate.requestSponsorship">Solicitar Patrocínio</span>
+                    </button>
+                </div>
+
+                <!-- Gold Tier -->
+                <div class="tier-card gold">
+                    <span class="tier-badge gold">GOLD SPONSOR</span>
+                    <h3 id="goldPrice">R$ 300/mês</h3>
+                    <ul class="benefits-list">
+                        <li data-i18n="donate.goldBenefit1">Logo no footer (mobile + desktop)</li>
+                        <li data-i18n="donate.goldBenefit2">Card em páginas principais</li>
+                        <li data-i18n="donate.goldBenefit3">Menção em newsletter</li>
+                        <li><strong data-i18n="donate.limit3">Limite: até 3 sponsors por região</strong></li>
+                    </ul>
+                    <div class="availability available" id="goldAvailability">
+                        <span data-i18n="donate.slotsAvailable">3 vagas disponíveis</span>
+                    </div>
+                    <button class="btn" onclick="requestSponsorship('gold')" style="width: 100%; margin-top: 15px;">
+                        <span data-i18n="donate.requestSponsorship">Solicitar Patrocínio</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <p style="color: #666; text-align: center;" data-i18n="donate.sponsorNote">
+                    Ao clicar em "Solicitar Patrocínio", você será direcionado para preencher um formulário.
+                    Entraremos em contato em até 24 horas!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sponsorship Request Modal -->
+    <div id="sponsorshipModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px); overflow-y: auto; padding: 20px; box-sizing: border-box;">
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalSlideIn 0.3s ease-out; margin: auto;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 48px; margin-bottom: 10px;">🏸❤️</div>
+                <h2 id="sponsorshipModalTitle" style="color: #1e293b; margin: 0 0 8px 0; font-size: 1.3rem;">Obrigado pelo seu interesse!</h2>
+                <p id="sponsorshipModalSubtitle" style="color: #64748b; margin: 0; font-size: 0.85rem;">Ficamos muito felizes com o seu apoio à comunidade de esportes de raquete!</p>
+            </div>
+
+            <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; padding: 14px; margin-bottom: 16px; border: 1px solid #fbbf24;">
+                <p id="sponsorshipModalTier" style="color: #92400e; font-weight: 600; margin: 0 0 8px 0; font-size: 1rem; text-align: center;">
+                    Patrocínio MASTER
+                </p>
+                <p id="sponsorshipModalContact" style="color: #78716c; margin: 0; font-size: 0.8rem; text-align: center;">
+                    Para dar continuidade, entre em contato conosco:
+                </p>
+            </div>
+
+            <div style="background: #f1f5f9; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="font-size: 20px;">📧</span>
+                    <div>
+                        <div style="color: #64748b; font-size: 0.75rem;">E-mail</div>
+                        <div style="color: #1e293b; font-weight: 600; font-size: 0.9rem;">aokubo@gmail.com</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">📝</span>
+                    <div>
+                        <div id="sponsorshipModalSubjectLabel" style="color: #64748b; font-size: 0.75rem;">Assunto sugerido</div>
+                        <div id="sponsorshipModalSubject" style="color: #1e293b; font-weight: 600; font-size: 0.9rem;">Patrocínio MASTER - BR</div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="sponsorshipModalCopyBtn" onclick="copyEmailToClipboard()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-bottom: 10px;">
+                Copiar E-mail
+            </button>
+
+            <button id="sponsorshipModalCloseBtn" onclick="closeSponsorshipModal()" style="width: 100%; padding: 10px; background: transparent; color: #64748b; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-weight: 500; cursor: pointer;">
+                Fechar
+            </button>
+
+            <p id="sponsorshipModalResponse" style="text-align: center; color: #94a3b8; font-size: 0.75rem; margin: 12px 0 0 0;">
+                Respondemos em até 24 horas!
+            </p>
+        </div>
+    </div>
+
+    <style>
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+
+    <script>
+        let selectedAmount = 0;
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.closest('.tab').classList.add('active');
+        }
+
+        function selectAmount(amount) {
+            selectedAmount = amount;
+            document.querySelectorAll('.amount-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.closest('.amount-btn').classList.add('selected');
+            document.getElementById('customAmount').value = '';
+        }
+
+        function copyPixKey() {
+            const pixKey = 'aokubo@gmail.com';
+            navigator.clipboard.writeText(pixKey).then(() => {
+                alert('Chave PIX copiada!');
+            });
+        }
+
+        // Generate a simple reference code
+        function generateReferenceCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = 'RPA-';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Donation Form Submission
+        document.getElementById('donationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const donorName = document.getElementById('donorName').value;
+            const customAmount = document.getElementById('customAmount').value;
+            const amount = customAmount || selectedAmount;
+
+            if (!amount || amount <= 0) {
+                alert('Por favor, selecione ou digite um valor!');
+                return;
+            }
+
+            // Generate reference code
+            const referenceCode = generateReferenceCode();
+
+            // Show reference code
+            document.getElementById('referenceCode').textContent = referenceCode;
+            document.getElementById('referenceCodeSection').style.display = 'block';
+            document.getElementById('donationForm').style.display = 'none';
+
+            // Scroll to reference code
+            document.getElementById('referenceCodeSection').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        function requestSponsorship(tier) {
+            const lang = window.i18n?.getCurrentLanguage() || 'pt-BR';
+            let region = 'BR';
+            if (lang === 'en-US') region = 'INTL';
+            if (lang === 'ja-JP') region = 'JP';
+
+            const tierIcon = tier === 'master' ? '🥇' : '🥈';
+            const tierName = tier.toUpperCase();
+
+            // Get all modal elements
+            const titleEl = document.getElementById('sponsorshipModalTitle');
+            const subtitleEl = document.getElementById('sponsorshipModalSubtitle');
+            const tierEl = document.getElementById('sponsorshipModalTier');
+            const contactEl = document.getElementById('sponsorshipModalContact');
+            const subjectLabelEl = document.getElementById('sponsorshipModalSubjectLabel');
+            const subjectEl = document.getElementById('sponsorshipModalSubject');
+            const copyBtnEl = document.getElementById('sponsorshipModalCopyBtn');
+            const closeBtnEl = document.getElementById('sponsorshipModalCloseBtn');
+            const responseEl = document.getElementById('sponsorshipModalResponse');
+
+            // Update all texts based on language
+            if (lang === 'pt-BR') {
+                titleEl.textContent = 'Obrigado pelo seu interesse!';
+                subtitleEl.textContent = 'Ficamos felizes com seu apoio!';
+                tierEl.innerHTML = `${tierIcon} Patrocínio ${tierName}`;
+                contactEl.textContent = 'Entre em contato conosco:';
+                subjectLabelEl.textContent = 'Assunto sugerido';
+                subjectEl.textContent = `Patrocínio ${tierName} - RPA - ${region}`;
+                copyBtnEl.innerHTML = 'Copiar E-mail';
+                closeBtnEl.textContent = 'Fechar';
+                responseEl.innerHTML = 'Respondemos em até 24h!';
+            } else if (lang === 'ja-JP') {
+                titleEl.textContent = 'ご興味ありがとうございます！';
+                subtitleEl.textContent = 'ご支援に感謝します！';
+                tierEl.innerHTML = `${tierIcon} ${tierName}スポンサー`;
+                contactEl.textContent = 'お問い合わせください：';
+                subjectLabelEl.textContent = '件名';
+                subjectEl.textContent = `${tierName} Sponsorship - RPA - ${region}`;
+                copyBtnEl.innerHTML = 'メールをコピー';
+                closeBtnEl.textContent = '閉じる';
+                responseEl.innerHTML = '24時間以内に返信します！';
+            } else {
+                titleEl.textContent = 'Thank you for your interest!';
+                subtitleEl.textContent = 'We appreciate your support!';
+                tierEl.innerHTML = `${tierIcon} ${tierName} Sponsorship`;
+                contactEl.textContent = 'Please contact us:';
+                subjectLabelEl.textContent = 'Suggested subject';
+                subjectEl.textContent = `${tierName} Sponsorship - RPA - ${region}`;
+                copyBtnEl.innerHTML = 'Copy Email';
+                closeBtnEl.textContent = 'Close';
+                responseEl.innerHTML = 'We respond within 24 hours!';
+            }
+
+            // Store for copy button feedback
+            window.currentLang = lang;
+
+            // Show modal
+            const modal = document.getElementById('sponsorshipModal');
+            modal.style.display = 'flex';
+        }
+
+        function closeSponsorshipModal() {
+            document.getElementById('sponsorshipModal').style.display = 'none';
+        }
+
+        function copyEmailToClipboard() {
+            const email = 'aokubo@gmail.com';
+            const lang = window.currentLang || 'pt-BR';
+            navigator.clipboard.writeText(email).then(() => {
+                const btn = document.getElementById('sponsorshipModalCopyBtn');
+                const originalText = btn.innerHTML;
+
+                // Show success message in correct language
+                if (lang === 'ja-JP') {
+                    btn.innerHTML = 'コピーしました！';
+                } else if (lang === 'en-US') {
+                    btn.innerHTML = 'Email copied!';
+                } else {
+                    btn.innerHTML = 'E-mail copiado!';
+                }
+                btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)';
+                }, 2000);
+            });
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('sponsorshipModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSponsorshipModal();
+            }
+        });
+
+        // Currency and amounts by language
+        const currencyConfig = {
+            'pt-BR': {
+                currency: 'BRL',
+                region: 'BR',
+                symbol: 'R$',
+                amounts: [10, 25, 50, 100]
+            },
+            'en-US': {
+                currency: 'USD',
+                region: 'INTL',
+                symbol: '$',
+                amounts: [2, 5, 10, 20]
+            },
+            'ja-JP': {
+                currency: 'JPY',
+                region: 'JP',
+                symbol: '¥',
+                amounts: [300, 750, 1500, 3000]
+            }
+        };
+
+        function updateAmountsDisplay() {
+            const currentLanguage = window.i18n?.getCurrentLanguage() || localStorage.getItem('language') || 'pt-BR';
+            const config = currencyConfig[currentLanguage] || currencyConfig['pt-BR'];
+
+            // Update amount buttons
+            const amt1 = document.getElementById('amt1');
+            const amt2 = document.getElementById('amt2');
+            const amt3 = document.getElementById('amt3');
+            const amt4 = document.getElementById('amt4');
+
+            if (amt1) amt1.textContent = `${config.symbol} ${config.amounts[0]}`;
+            if (amt2) amt2.textContent = `${config.symbol} ${config.amounts[1]}`;
+            if (amt3) amt3.textContent = `${config.symbol} ${config.amounts[2]}`;
+            if (amt4) amt4.textContent = `${config.symbol} ${config.amounts[3]}`;
+
+            // Update button onclick to use correct amounts
+            const btns = document.querySelectorAll('.amount-btn');
+            if (btns.length >= 4) {
+                btns[0].setAttribute('onclick', `selectAmount(${config.amounts[0]})`);
+                btns[1].setAttribute('onclick', `selectAmount(${config.amounts[1]})`);
+                btns[2].setAttribute('onclick', `selectAmount(${config.amounts[2]})`);
+                btns[3].setAttribute('onclick', `selectAmount(${config.amounts[3]})`);
+            }
+
+            // Update sponsor prices
+            const prices = {
+                'BR': { master: 'R$ 500/mês', gold: 'R$ 300/mês' },
+                'INTL': { master: '$100/month', gold: '$60/month' },
+                'JP': { master: '¥15,000/月', gold: '¥9,000/月' }
+            };
+
+            const region = config.region;
+            document.getElementById('masterPrice').textContent = prices[region].master;
+            document.getElementById('goldPrice').textContent = prices[region].gold;
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                if (typeof window.i18n === 'undefined') {
+                    window.i18n = new I18n();
+                    await window.i18n.init();
+                }
+                updateAmountsDisplay();
+            } catch (error) {
+                console.error('Error initializing i18n:', error);
+            }
+        });
+    </script>
+</body>
+</html>
