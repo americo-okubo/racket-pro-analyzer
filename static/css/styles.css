@@ -585,9 +585,10 @@ header {
     background: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     z-index: 1000;
     padding: 20px;
+    overflow-y: auto;
 }
 
 .modal-content {
@@ -595,8 +596,9 @@ header {
     border-radius: var(--radius);
     width: 100%;
     max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: none;
+    margin: auto;
+    position: relative;
 }
 
 .modal-large {
@@ -605,6 +607,19 @@ header {
 
 .modal-medium {
     max-width: 600px;
+}
+
+/* Desktop - centralize modals vertically */
+@media (min-width: 769px) {
+    .modal {
+        align-items: center;
+        padding: 40px 20px;
+    }
+
+    .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
 }
 
 /* Help Modal Styles */
@@ -1544,26 +1559,27 @@ footer a {
 }
 
 .voice-game-modal {
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 15px;
+    padding: 20px;
     box-sizing: border-box;
     overflow-y: auto;
-}
-
-.voice-game-modal[style*="display: flex"] {
-    display: flex !important;
 }
 
 .voice-game-modal .modal-content {
     max-width: 450px;
     width: 100%;
-    margin: 0 auto;
+    margin: auto;
     position: relative;
-    top: 0;
-    transform: none;
     box-sizing: border-box;
-    overflow: visible;
+}
+
+/* Desktop - centralize voice modal vertically */
+@media (min-width: 769px) {
+    .voice-game-modal {
+        align-items: center;
+        padding: 40px 20px;
+    }
 }
 
 .voice-game-content {
