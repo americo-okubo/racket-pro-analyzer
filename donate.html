@@ -414,26 +414,26 @@
                         <p data-i18n="donate.codeInstructions">Use este código ao fazer a doação via PIX ou PayPal</p>
                     </div>
 
-                    <!-- PIX Section -->
-                    <div class="card">
-                        <h2>PIX (Brasil)</h2>
-                        <p><strong>Chave PIX (E-mail):</strong></p>
+                    <!-- PIX Section (Brazil only) -->
+                    <div id="pixSection" class="card">
+                        <h2 data-i18n="donate.pixTitle">💚 PIX (Brasil)</h2>
+                        <p><strong data-i18n="donate.pixKeyLabel">Chave PIX (E-mail):</strong></p>
                         <div class="pix-key">aokubo@gmail.com</div>
-                        <button class="copy-btn" onclick="copyPixKey()">Copiar Chave PIX</button>
+                        <button class="copy-btn" onclick="copyPixKey()" data-i18n="donate.copyPixButton">📋 Copiar Chave PIX</button>
                         <p style="color: #666; margin-top: 15px; font-size: 0.9em;">
                             <strong data-i18n="donate.importantPix">Importante:</strong>
                             <span data-i18n="donate.includeCode">Inclua o código acima na descrição do PIX</span>
                         </p>
                     </div>
 
-                    <!-- PayPal Section -->
-                    <div class="card">
-                        <h2>PayPal (Internacional)</h2>
-                        <a href="https://www.paypal.com/donate/?business=aokubo@gmail.com&currency_code=USD"
+                    <!-- PayPal Section (International) -->
+                    <div id="paypalSection" class="card">
+                        <h2 data-i18n="donate.paypalTitle">💙 PayPal (Internacional)</h2>
+                        <a id="paypalLink" href="https://www.paypal.com/donate/?business=aokubo@gmail.com&currency_code=USD"
                            target="_blank"
                            class="btn"
                            style="display: inline-block; text-decoration: none;">
-                            Doar via PayPal
+                            <span data-i18n="donate.donateViaPaypal">Doar via PayPal</span>
                         </a>
                         <p style="color: #666; margin-top: 15px; font-size: 0.9em;">
                             <span data-i18n="donate.includeCodePaypal">Inclua o código de referência no comentário da doação</span>
@@ -793,6 +793,28 @@
             const region = config.region;
             document.getElementById('masterPrice').textContent = prices[region].master;
             document.getElementById('goldPrice').textContent = prices[region].gold;
+
+            // Show/hide payment sections based on language
+            const pixSection = document.getElementById('pixSection');
+            const paypalSection = document.getElementById('paypalSection');
+            const paypalLink = document.getElementById('paypalLink');
+
+            if (currentLanguage === 'pt-BR') {
+                // Brazil: Show PIX (primary) and PayPal (secondary)
+                if (pixSection) pixSection.style.display = 'block';
+                if (paypalSection) paypalSection.style.display = 'block';
+                if (paypalLink) paypalLink.href = 'https://www.paypal.com/donate/?business=aokubo@gmail.com&currency_code=BRL';
+            } else if (currentLanguage === 'ja-JP') {
+                // Japan: Show only PayPal with JPY
+                if (pixSection) pixSection.style.display = 'none';
+                if (paypalSection) paypalSection.style.display = 'block';
+                if (paypalLink) paypalLink.href = 'https://www.paypal.com/donate/?business=aokubo@gmail.com&currency_code=JPY';
+            } else {
+                // International (en-US): Show only PayPal with USD
+                if (pixSection) pixSection.style.display = 'none';
+                if (paypalSection) paypalSection.style.display = 'block';
+                if (paypalLink) paypalLink.href = 'https://www.paypal.com/donate/?business=aokubo@gmail.com&currency_code=USD';
+            }
         }
 
         // Initialize
