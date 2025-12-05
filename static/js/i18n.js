@@ -35,6 +35,13 @@ window.i18n = {
         await this.loadTranslations(lang);
         this.applyTranslations();
         this.updateLanguageFlags();
+
+        // Dispatch custom event for language change
+        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
+    },
+
+    getCurrentLanguage() {
+        return this.currentLanguage;
     },
 
     applyTranslations() {

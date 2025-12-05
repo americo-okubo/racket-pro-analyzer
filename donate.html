@@ -817,16 +817,23 @@
             }
         }
 
+        // Listen for language changes
+        window.addEventListener('languageChanged', () => {
+            updateAmountsDisplay();
+        });
+
         // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                if (typeof window.i18n === 'undefined') {
-                    window.i18n = new I18n();
-                    await window.i18n.init();
+                // Wait for i18n to be ready
+                if (window.i18n && window.i18n.currentLanguage) {
+                    updateAmountsDisplay();
+                } else {
+                    // Wait a bit for i18n to initialize
+                    setTimeout(updateAmountsDisplay, 100);
                 }
-                updateAmountsDisplay();
             } catch (error) {
-                console.error('Error initializing i18n:', error);
+                console.error('Error initializing:', error);
             }
         });
     </script>
