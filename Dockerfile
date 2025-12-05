@@ -18,6 +18,7 @@ COPY static/ ./static/
 COPY index.html .
 COPY login.html .
 COPY games.html .
+COPY donate.html .
 COPY manifest.json .
 
 # Configurar variáveis de ambiente
