@@ -102,6 +102,14 @@ header {
     font-size: 0.9em;
 }
 
+/* Hide help button and user info on mobile (except on index page) */
+@media (max-width: 768px) {
+    body:not(.index-page) .btn-help,
+    body:not(.index-page) .user-info {
+        display: none;
+    }
+}
+
 /* =============================================================================
    Navigation
    ============================================================================= */
