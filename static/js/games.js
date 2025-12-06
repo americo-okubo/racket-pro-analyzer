@@ -98,14 +98,17 @@ function updateSportDisplay() {
     document.title = `${getSportName(currentSport)} - Racket Pro Analyzer`;
 }
 
-// Override changeLanguage to also update sport name
+// Override changeLanguage to also update sport name and re-render dynamic content
 const originalChangeLanguage = window.changeLanguage;
 window.changeLanguage = function(lang) {
     if (originalChangeLanguage) {
         originalChangeLanguage(lang);
     }
-    // Update sport name after language change
-    setTimeout(updateSportDisplay, 100);
+    // Update sport name and re-render games list after language change
+    setTimeout(() => {
+        updateSportDisplay();
+        renderGamesList();
+    }, 100);
 };
 
 // =============================================================================
