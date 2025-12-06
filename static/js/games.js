@@ -65,8 +65,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Configure game type options based on sport
     configureGameTypes(sportConfig);
 
-    // Set today's date as default
-    document.getElementById('gameDate').value = new Date().toISOString().split('T')[0];
+    // Set today's date as default (using local timezone)
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    document.getElementById('gameDate').value = localDate;
 
     // Load data
     await loadPlayers();
@@ -527,7 +529,10 @@ function filterGames() {
 function openNewGameModal() {
     editingGameId = null; // Reset editing mode
     document.getElementById('newGameForm').reset();
-    document.getElementById('gameDate').value = new Date().toISOString().split('T')[0];
+    // Set today's date using local timezone
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    document.getElementById('gameDate').value = localDate;
 
     // Reset modal title
     document.querySelector('#newGameModal .modal-header h2').textContent = t('games.newGameTitle', '➕ Registrar Jogo');
