@@ -702,7 +702,7 @@ function updateResultDisplay() {
         .map(s => `${s.you}-${s.opponent}`)
         .join(', ');
 
-    scoreInput.value = scoreStr ? `${calc.setsWon}-${calc.setsLost} (${scoreStr})` : '';
+    scoreInput.value = scoreStr || '';
 
     if (calc.validSets === 0) {
         display.innerHTML = `<span class="result-pending">${t('games.fillSets', 'Preencha os sets acima')}</span>`;
