@@ -981,6 +981,41 @@ header {
     background: var(--card-bg);
 }
 
+/* Chart Header with Period Filter */
+.chart-header-with-period {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.chart-header-with-period h3 {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.chart-header-with-period select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+    background: var(--card-bg);
+}
+
+.wl-chart-container {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    height: 200px;
+}
+
+.wl-chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .player-stats-box {
     background: var(--card-bg);
     border-radius: var(--radius-sm);

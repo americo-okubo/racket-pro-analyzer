@@ -237,7 +237,12 @@
         "week": "週",
         "average": "平均",
         "date": "日付",
-        "ratePct": "勝率 (%)"
+        "ratePct": "勝率 (%)",
+        "winsLossesOverview": "📊 勝敗サマリー",
+        "periodAll": "全期間",
+        "periodSemester": "過去6ヶ月",
+        "periodQuarter": "過去3ヶ月",
+        "periodMonth": "過去1ヶ月"
     },
     "page": {
         "gamesTitle": "試合履歴 - Racket Pro Analyzer"

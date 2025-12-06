@@ -357,6 +357,22 @@
 
                 <!-- Singles Tab -->
                 <div id="singlesTab" class="analytics-tab-content active">
+                    <!-- Wins/Losses Overview Chart -->
+                    <div class="analytics-section">
+                        <div class="chart-header-with-period">
+                            <h3 data-i18n="analytics.winsLossesOverview">📊 Vitórias e Derrotas</h3>
+                            <select id="singlesWLPeriod" onchange="renderSinglesWLChart()">
+                                <option value="all" data-i18n="analytics.periodAll">Todo o histórico</option>
+                                <option value="semester" data-i18n="analytics.periodSemester">Último semestre</option>
+                                <option value="quarter" data-i18n="analytics.periodQuarter">Último trimestre</option>
+                                <option value="month" data-i18n="analytics.periodMonth">Último mês</option>
+                            </select>
+                        </div>
+                        <div class="wl-chart-container">
+                            <canvas id="singlesWLChart"></canvas>
+                        </div>
+                    </div>
+
                     <!-- Summary Table -->
                     <div class="analytics-section">
                         <div class="table-header-with-sort">
@@ -406,6 +422,22 @@
 
                 <!-- Doubles Tab -->
                 <div id="doublesTab" class="analytics-tab-content" style="display: none;">
+                    <!-- Wins/Losses Overview Chart -->
+                    <div class="analytics-section">
+                        <div class="chart-header-with-period">
+                            <h3 data-i18n="analytics.winsLossesOverview">📊 Vitórias e Derrotas</h3>
+                            <select id="doublesWLPeriod" onchange="renderDoublesWLChart()">
+                                <option value="all" data-i18n="analytics.periodAll">Todo o histórico</option>
+                                <option value="semester" data-i18n="analytics.periodSemester">Último semestre</option>
+                                <option value="quarter" data-i18n="analytics.periodQuarter">Último trimestre</option>
+                                <option value="month" data-i18n="analytics.periodMonth">Último mês</option>
+                            </select>
+                        </div>
+                        <div class="wl-chart-container">
+                            <canvas id="doublesWLChart"></canvas>
+                        </div>
+                    </div>
+
                     <!-- Summary Tables -->
                     <div class="analytics-section">
                         <div class="table-header-with-sort">

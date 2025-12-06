@@ -942,9 +942,11 @@ function switchAnalyticsTab(tab) {
 
 function renderChartsForTab(tab) {
     if (tab === 'singles') {
+        renderSinglesWLChart();
         renderSinglesOpponentTable();
         renderSinglesPlayerHistory();
     } else if (tab === 'doubles') {
+        renderDoublesWLChart();
         renderDoublesPartnerTable();
         renderDoublesOpponentTable();
         renderDoublesPartnerHistory();
@@ -1443,6 +1445,182 @@ function selectPartnerFromTable(name) {
     document.getElementById('doublesPartnerSelect').value = name;
     renderDoublesPartnerHistory();
     document.getElementById('doublesPartnerHistoryChart').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// =============================================================================
+// WINS/LOSSES OVERVIEW CHARTS
+// =============================================================================
+
+// Helper to filter games by period
+function filterGamesByPeriod(gamesList, period) {
+    if (period === 'all') return gamesList;
+
+    const now = new Date();
+    let cutoffDate;
+
+    switch (period) {
+        case 'month':
+            cutoffDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            break;
+        case 'quarter':
+            cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            break;
+        case 'semester':
+            cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+            break;
+        default:
+            return gamesList;
+    }
+
+    return gamesList.filter(g => new Date(g.game_date) >= cutoffDate);
+}
+
+// Render Singles Wins/Losses Chart
+function renderSinglesWLChart() {
+    const ctx = document.getElementById('singlesWLChart');
+    if (!ctx) return;
+    if (typeof Chart === 'undefined') return;
+
+    if (charts.singlesWL) charts.singlesWL.destroy();
+
+    const period = document.getElementById('singlesWLPeriod')?.value || 'all';
+    const singlesGames = filterGamesByPeriod(
+        filteredGames.filter(g => g.game_type === 'singles'),
+        period
+    );
+
+    const wins = singlesGames.filter(g => g.result === 'win').length;
+    const losses = singlesGames.filter(g => g.result === 'loss').length;
+    const total = wins + losses;
+
+    if (total === 0) {
+        charts.singlesWL = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [t('analytics.noGamesInPeriod', 'Sem jogos no período')],
+                datasets: [{ data: [0], backgroundColor: '#ccc' }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+
+    charts.singlesWL = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [t('stats.wins', 'Vitórias'), t('stats.losses', 'Derrotas')],
+            datasets: [{
+                data: [wins, losses],
+                backgroundColor: ['#27ae60', '#e74c3c'],
+                borderRadius: 6,
+                barThickness: 60
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${value} (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// Render Doubles Wins/Losses Chart
+function renderDoublesWLChart() {
+    const ctx = document.getElementById('doublesWLChart');
+    if (!ctx) return;
+    if (typeof Chart === 'undefined') return;
+
+    if (charts.doublesWL) charts.doublesWL.destroy();
+
+    const period = document.getElementById('doublesWLPeriod')?.value || 'all';
+    const doublesGames = filterGamesByPeriod(
+        filteredGames.filter(g => g.game_type === 'doubles'),
+        period
+    );
+
+    const wins = doublesGames.filter(g => g.result === 'win').length;
+    const losses = doublesGames.filter(g => g.result === 'loss').length;
+    const total = wins + losses;
+
+    if (total === 0) {
+        charts.doublesWL = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [t('analytics.noGamesInPeriod', 'Sem jogos no período')],
+                datasets: [{ data: [0], backgroundColor: '#ccc' }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+
+    charts.doublesWL = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [t('stats.wins', 'Vitórias'), t('stats.losses', 'Derrotas')],
+            datasets: [{
+                data: [wins, losses],
+                backgroundColor: ['#27ae60', '#e74c3c'],
+                borderRadius: 6,
+                barThickness: 60
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${value} (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
 }
 
 // =============================================================================

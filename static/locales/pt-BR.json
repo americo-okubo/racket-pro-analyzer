@@ -237,7 +237,12 @@
         "week": "Semana",
         "average": "Média",
         "date": "Data",
-        "ratePct": "Taxa (%)"
+        "ratePct": "Taxa (%)",
+        "winsLossesOverview": "📊 Vitórias e Derrotas",
+        "periodAll": "Todo o histórico",
+        "periodSemester": "Último semestre",
+        "periodQuarter": "Último trimestre",
+        "periodMonth": "Último mês"
     },
     "page": {
         "gamesTitle": "Histórico de Jogos - Racket Pro Analyzer"
