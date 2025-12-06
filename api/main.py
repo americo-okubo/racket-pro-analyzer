@@ -258,6 +258,16 @@ async def create_player(player: PlayerCreate, user_id: int = Depends(verify_toke
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Check for duplicate name (same user, same sport, case-insensitive)
+    cursor.execute("""
+        SELECT id FROM players
+        WHERE user_id = ? AND sport = ? AND LOWER(name) = LOWER(?)
+    """, (user_id, player.sport, player.name))
+
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Já existe um jogador com o nome '{player.name}' neste esporte")
+
     cursor.execute("""
         INSERT INTO players (user_id, sport, name, dominant_hand, level, play_style, age_group, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -283,11 +293,23 @@ async def update_player(player_id: int, player: PlayerUpdate, user_id: int = Dep
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Verify ownership
+    # Verify ownership and get current player data
     cursor.execute("SELECT * FROM players WHERE id = ? AND user_id = ?", (player_id, user_id))
-    if not cursor.fetchone():
+    current_player = cursor.fetchone()
+    if not current_player:
         conn.close()
         raise HTTPException(status_code=404, detail="Jogador não encontrado")
+
+    # Check for duplicate name if name is being updated
+    if player.name:
+        cursor.execute("""
+            SELECT id FROM players
+            WHERE user_id = ? AND sport = ? AND LOWER(name) = LOWER(?) AND id != ?
+        """, (user_id, current_player["sport"], player.name, player_id))
+
+        if cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=400, detail=f"Já existe um jogador com o nome '{player.name}' neste esporte")
 
     # Build update query
     updates = []
