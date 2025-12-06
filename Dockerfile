@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api/__init__.py ./api/
 COPY api/models.py ./api/
 COPY api/database.py ./api/
+COPY api/storage_manager.py ./api/
 COPY api/main.py ./api/
 
 # Copiar arquivos estáticos e HTML
