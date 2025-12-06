@@ -357,20 +357,11 @@
 
                 <!-- Singles Tab -->
                 <div id="singlesTab" class="analytics-tab-content active">
-                    <!-- Wins/Losses Overview Chart -->
-                    <div class="analytics-section">
-                        <div class="chart-header-with-period">
-                            <h3 data-i18n="analytics.winsLossesOverview">📊 Vitórias e Derrotas</h3>
-                            <select id="singlesWLPeriod" onchange="renderSinglesWLChart()">
-                                <option value="all" data-i18n="analytics.periodAll">Todo o histórico</option>
-                                <option value="semester" data-i18n="analytics.periodSemester">Último semestre</option>
-                                <option value="quarter" data-i18n="analytics.periodQuarter">Último trimestre</option>
-                                <option value="month" data-i18n="analytics.periodMonth">Último mês</option>
-                            </select>
-                        </div>
-                        <div class="wl-chart-container">
-                            <canvas id="singlesWLChart"></canvas>
-                        </div>
+                    <!-- Performance Analysis Button -->
+                    <div class="analytics-section performance-btn-section">
+                        <button onclick="openPerformanceModal('singles')" class="btn-performance">
+                            📊 <span data-i18n="analytics.performanceAnalysis">Análise de Desempenho</span>
+                        </button>
                     </div>
 
                     <!-- Summary Table -->
@@ -422,20 +413,11 @@
 
                 <!-- Doubles Tab -->
                 <div id="doublesTab" class="analytics-tab-content" style="display: none;">
-                    <!-- Wins/Losses Overview Chart -->
-                    <div class="analytics-section">
-                        <div class="chart-header-with-period">
-                            <h3 data-i18n="analytics.winsLossesOverview">📊 Vitórias e Derrotas</h3>
-                            <select id="doublesWLPeriod" onchange="renderDoublesWLChart()">
-                                <option value="all" data-i18n="analytics.periodAll">Todo o histórico</option>
-                                <option value="semester" data-i18n="analytics.periodSemester">Último semestre</option>
-                                <option value="quarter" data-i18n="analytics.periodQuarter">Último trimestre</option>
-                                <option value="month" data-i18n="analytics.periodMonth">Último mês</option>
-                            </select>
-                        </div>
-                        <div class="wl-chart-container">
-                            <canvas id="doublesWLChart"></canvas>
-                        </div>
+                    <!-- Performance Analysis Button -->
+                    <div class="analytics-section performance-btn-section">
+                        <button onclick="openPerformanceModal('doubles')" class="btn-performance">
+                            📊 <span data-i18n="analytics.performanceAnalysis">Análise de Desempenho</span>
+                        </button>
                     </div>
 
                     <!-- Summary Tables -->
@@ -620,6 +602,41 @@
 
                 <div class="help-actions">
                     <button onclick="closeModal('helpModal')" class="btn-primary" data-i18n="help.gotIt">Entendi!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Performance Analysis -->
+    <div id="performanceModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large performance-modal">
+            <div class="modal-header performance-header">
+                <h2>📊 <span data-i18n="analytics.performanceAnalysis">Análise de Desempenho</span></h2>
+                <button onclick="closeModal('performanceModal')" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Period Filter Buttons -->
+                <div class="performance-period-buttons">
+                    <button class="period-btn" data-period="month" onclick="setPerformancePeriod('month')" data-i18n="analytics.periodMonth">Último mês</button>
+                    <button class="period-btn" data-period="quarter" onclick="setPerformancePeriod('quarter')" data-i18n="analytics.periodQuarter">Trimestre</button>
+                    <button class="period-btn" data-period="semester" onclick="setPerformancePeriod('semester')" data-i18n="analytics.periodSemester">Semestre</button>
+                    <button class="period-btn active" data-period="all" onclick="setPerformancePeriod('all')" data-i18n="analytics.periodAll">Todo período</button>
+                </div>
+
+                <!-- Temporal Evolution Chart -->
+                <div class="performance-section">
+                    <h3>📈 <span data-i18n="analytics.temporalEvolution">Evolução Temporal</span></h3>
+                    <div class="performance-chart-container">
+                        <canvas id="temporalEvolutionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Results Distribution Chart -->
+                <div class="performance-section">
+                    <h3>📊 <span data-i18n="analytics.resultsDistribution">Distribuição de Resultados</span></h3>
+                    <div class="performance-chart-container distribution-container">
+                        <canvas id="resultsDistributionChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>

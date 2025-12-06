@@ -238,10 +238,13 @@
         "average": "Média",
         "date": "Data",
         "ratePct": "Taxa (%)",
-        "winsLossesOverview": "📊 Vitórias e Derrotas",
-        "periodAll": "Todo o histórico",
-        "periodSemester": "Último semestre",
-        "periodQuarter": "Último trimestre",
+        "performanceAnalysis": "Análise de Desempenho",
+        "temporalEvolution": "Evolução Temporal",
+        "resultsDistribution": "Distribuição de Resultados",
+        "noGamesInPeriod": "Sem jogos no período",
+        "periodAll": "Todo período",
+        "periodSemester": "Semestre",
+        "periodQuarter": "Trimestre",
         "periodMonth": "Último mês"
     },
     "page": {

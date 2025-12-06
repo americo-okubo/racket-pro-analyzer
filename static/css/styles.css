@@ -1016,6 +1016,115 @@ header {
     height: 100% !important;
 }
 
+/* Performance Analysis Modal */
+.performance-modal {
+    max-width: 900px;
+}
+
+.performance-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.performance-header h2 {
+    color: white;
+    margin: 0;
+    font-size: 1.4em;
+}
+
+.performance-header .close-btn {
+    color: white;
+    opacity: 0.9;
+}
+
+.performance-header .close-btn:hover {
+    opacity: 1;
+}
+
+.performance-period-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 0;
+    flex-wrap: wrap;
+}
+
+.period-btn {
+    padding: 10px 20px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 25px;
+    font-size: 0.95em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.period-btn:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.period-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+.performance-section {
+    margin-bottom: 30px;
+}
+
+.performance-section h3 {
+    font-size: 1.15em;
+    color: var(--text-color);
+    margin-bottom: 16px;
+    padding-left: 4px;
+}
+
+.performance-chart-container {
+    background: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    height: 300px;
+}
+
+.performance-chart-container.distribution-container {
+    height: 250px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.performance-chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.performance-btn-section {
+    text-align: center;
+    padding: 8px 0 16px;
+}
+
+.btn-performance {
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-performance:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
 .player-stats-box {
     background: var(--card-bg);
     border-radius: var(--radius-sm);

@@ -942,11 +942,9 @@ function switchAnalyticsTab(tab) {
 
 function renderChartsForTab(tab) {
     if (tab === 'singles') {
-        renderSinglesWLChart();
         renderSinglesOpponentTable();
         renderSinglesPlayerHistory();
     } else if (tab === 'doubles') {
-        renderDoublesWLChart();
         renderDoublesPartnerTable();
         renderDoublesOpponentTable();
         renderDoublesPartnerHistory();
@@ -1448,8 +1446,11 @@ function selectPartnerFromTable(name) {
 }
 
 // =============================================================================
-// WINS/LOSSES OVERVIEW CHARTS
+// PERFORMANCE ANALYSIS MODAL
 // =============================================================================
+
+let performanceGameType = 'singles';
+let performancePeriod = 'all';
 
 // Helper to filter games by period
 function filterGamesByPeriod(gamesList, period) {
@@ -1475,30 +1476,62 @@ function filterGamesByPeriod(gamesList, period) {
     return gamesList.filter(g => new Date(g.game_date) >= cutoffDate);
 }
 
-// Render Singles Wins/Losses Chart
-function renderSinglesWLChart() {
-    const ctx = document.getElementById('singlesWLChart');
+// Open Performance Analysis Modal
+function openPerformanceModal(gameType) {
+    performanceGameType = gameType;
+    performancePeriod = 'all';
+
+    // Reset period buttons
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.period === 'all') {
+            btn.classList.add('active');
+        }
+    });
+
+    document.getElementById('performanceModal').style.display = 'flex';
+    renderPerformanceCharts();
+}
+
+// Set performance period
+function setPerformancePeriod(period) {
+    performancePeriod = period;
+
+    // Update button states
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.period === period) {
+            btn.classList.add('active');
+        }
+    });
+
+    renderPerformanceCharts();
+}
+
+// Render both performance charts
+function renderPerformanceCharts() {
+    renderTemporalEvolutionChart();
+    renderResultsDistributionChart();
+}
+
+// Render Temporal Evolution Chart (line chart with wins/losses by month)
+function renderTemporalEvolutionChart() {
+    const ctx = document.getElementById('temporalEvolutionChart');
     if (!ctx) return;
     if (typeof Chart === 'undefined') return;
 
-    if (charts.singlesWL) charts.singlesWL.destroy();
+    if (charts.temporalEvolution) charts.temporalEvolution.destroy();
 
-    const period = document.getElementById('singlesWLPeriod')?.value || 'all';
-    const singlesGames = filterGamesByPeriod(
-        filteredGames.filter(g => g.game_type === 'singles'),
-        period
-    );
+    // Filter games by type and period
+    const typeGames = filteredGames.filter(g => g.game_type === performanceGameType);
+    const periodGames = filterGamesByPeriod(typeGames, performancePeriod);
 
-    const wins = singlesGames.filter(g => g.result === 'win').length;
-    const losses = singlesGames.filter(g => g.result === 'loss').length;
-    const total = wins + losses;
-
-    if (total === 0) {
-        charts.singlesWL = new Chart(ctx, {
-            type: 'bar',
+    if (periodGames.length === 0) {
+        charts.temporalEvolution = new Chart(ctx, {
+            type: 'line',
             data: {
                 labels: [t('analytics.noGamesInPeriod', 'Sem jogos no período')],
-                datasets: [{ data: [0], backgroundColor: '#ccc' }]
+                datasets: [{ data: [0], borderColor: '#ccc' }]
             },
             options: {
                 responsive: true,
@@ -1509,70 +1542,116 @@ function renderSinglesWLChart() {
         return;
     }
 
-    charts.singlesWL = new Chart(ctx, {
-        type: 'bar',
+    // Group games by month (YYYY-MM format)
+    const monthlyData = {};
+    periodGames.forEach(game => {
+        const date = new Date(game.game_date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = { wins: 0, losses: 0 };
+        }
+
+        if (game.result === 'win') {
+            monthlyData[monthKey].wins++;
+        } else if (game.result === 'loss') {
+            monthlyData[monthKey].losses++;
+        }
+    });
+
+    // Sort months and create arrays
+    const sortedMonths = Object.keys(monthlyData).sort();
+    const labels = sortedMonths;
+    const winsData = sortedMonths.map(m => monthlyData[m].wins);
+    const lossesData = sortedMonths.map(m => monthlyData[m].losses);
+
+    charts.temporalEvolution = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: [t('stats.wins', 'Vitórias'), t('stats.losses', 'Derrotas')],
-            datasets: [{
-                data: [wins, losses],
-                backgroundColor: ['#27ae60', '#e74c3c'],
-                borderRadius: 6,
-                barThickness: 60
-            }]
+            labels: labels,
+            datasets: [
+                {
+                    label: t('stats.wins', 'Wins'),
+                    data: winsData,
+                    borderColor: '#27ae60',
+                    backgroundColor: '#27ae60',
+                    tension: 0.3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: false
+                },
+                {
+                    label: t('stats.losses', 'Losses'),
+                    data: lossesData,
+                    borderColor: '#e74c3c',
+                    backgroundColor: '#e74c3c',
+                    tension: 0.3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    borderDash: [5, 5],
+                    fill: false
+                }
+            ]
         },
         options: {
-            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 20
+                    }
+                },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            const value = context.raw;
-                            const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-                            return `${value} (${pct}%)`;
+                        title: function(context) {
+                            return context[0].label;
                         }
                     }
                 }
             },
             scales: {
                 x: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
+                    grid: { display: false }
                 },
                 y: {
-                    grid: { display: false }
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
                 }
             }
         }
     });
 }
 
-// Render Doubles Wins/Losses Chart
-function renderDoublesWLChart() {
-    const ctx = document.getElementById('doublesWLChart');
+// Render Results Distribution Chart (donut/pie chart)
+function renderResultsDistributionChart() {
+    const ctx = document.getElementById('resultsDistributionChart');
     if (!ctx) return;
     if (typeof Chart === 'undefined') return;
 
-    if (charts.doublesWL) charts.doublesWL.destroy();
+    if (charts.resultsDistribution) charts.resultsDistribution.destroy();
 
-    const period = document.getElementById('doublesWLPeriod')?.value || 'all';
-    const doublesGames = filterGamesByPeriod(
-        filteredGames.filter(g => g.game_type === 'doubles'),
-        period
-    );
+    // Filter games by type and period
+    const typeGames = filteredGames.filter(g => g.game_type === performanceGameType);
+    const periodGames = filterGamesByPeriod(typeGames, performancePeriod);
 
-    const wins = doublesGames.filter(g => g.result === 'win').length;
-    const losses = doublesGames.filter(g => g.result === 'loss').length;
+    const wins = periodGames.filter(g => g.result === 'win').length;
+    const losses = periodGames.filter(g => g.result === 'loss').length;
     const total = wins + losses;
 
     if (total === 0) {
-        charts.doublesWL = new Chart(ctx, {
-            type: 'bar',
+        charts.resultsDistribution = new Chart(ctx, {
+            type: 'doughnut',
             data: {
-                labels: [t('analytics.noGamesInPeriod', 'Sem jogos no período')],
-                datasets: [{ data: [0], backgroundColor: '#ccc' }]
+                labels: [t('analytics.noGamesInPeriod', 'Sem jogos')],
+                datasets: [{ data: [1], backgroundColor: ['#ccc'] }]
             },
             options: {
                 responsive: true,
@@ -1583,40 +1662,44 @@ function renderDoublesWLChart() {
         return;
     }
 
-    charts.doublesWL = new Chart(ctx, {
-        type: 'bar',
+    const winPct = Math.round((wins / total) * 100);
+    const lossPct = Math.round((losses / total) * 100);
+
+    charts.resultsDistribution = new Chart(ctx, {
+        type: 'doughnut',
         data: {
-            labels: [t('stats.wins', 'Vitórias'), t('stats.losses', 'Derrotas')],
+            labels: [
+                `${t('stats.wins', 'Vitórias')} (${winPct}%)`,
+                `${t('stats.losses', 'Derrotas')} (${lossPct}%)`
+            ],
             datasets: [{
                 data: [wins, losses],
                 backgroundColor: ['#27ae60', '#e74c3c'],
-                borderRadius: 6,
-                barThickness: 60
+                borderWidth: 2,
+                borderColor: '#fff'
             }]
         },
         options: {
-            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '60%',
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
                             const value = context.raw;
                             const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-                            return `${value} (${pct}%)`;
+                            return ` ${value} (${pct}%)`;
                         }
                     }
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                },
-                y: {
-                    grid: { display: false }
                 }
             }
         }

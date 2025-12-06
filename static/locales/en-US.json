@@ -238,11 +238,14 @@
         "average": "Average",
         "date": "Date",
         "ratePct": "Rate (%)",
-        "winsLossesOverview": "📊 Wins and Losses",
-        "periodAll": "All time",
-        "periodSemester": "Last 6 months",
-        "periodQuarter": "Last 3 months",
-        "periodMonth": "Last month"
+        "performanceAnalysis": "Performance Analysis",
+        "temporalEvolution": "Temporal Evolution",
+        "resultsDistribution": "Results Distribution",
+        "noGamesInPeriod": "No games in period",
+        "periodAll": "All Period",
+        "periodSemester": "Semester",
+        "periodQuarter": "Quarter",
+        "periodMonth": "Last Month"
     },
     "page": {
         "gamesTitle": "Game History - Racket Pro Analyzer"
