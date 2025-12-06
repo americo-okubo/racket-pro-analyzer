@@ -446,6 +446,24 @@ header {
     color: var(--text-light);
 }
 
+.result-text {
+    font-size: 0.9em;
+    font-weight: 600;
+    padding: 2px 0;
+}
+
+.result-text.result-win {
+    color: var(--success-color);
+}
+
+.result-text.result-loss {
+    color: var(--danger-color);
+}
+
+.result-text.result-draw {
+    color: #95a5a6;
+}
+
 .game-actions {
     display: flex;
     gap: 8px;
@@ -1389,9 +1407,55 @@ header {
 }
 
 /* =============================================================================
-   Sets Score Input
+   Score Input (Simplified)
    ============================================================================= */
 
+.score-input-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 15px;
+    background: var(--bg-color);
+    border-radius: var(--radius);
+}
+
+.score-input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.score-input-group label {
+    font-size: 0.85em;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.score-input {
+    width: 70px;
+    padding: 12px;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1.5em;
+    font-weight: 700;
+}
+
+.score-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.score-separator {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-top: 20px;
+}
+
+/* Legacy - keeping for backwards compatibility */
 .sets-container {
     display: flex;
     flex-direction: column;

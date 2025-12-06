@@ -438,8 +438,17 @@ function renderGamesList() {
 
     container.innerHTML = filteredGames.map(game => {
         const isDoubles = game.game_type === 'doubles';
-        const resultIcon = game.result === 'win' ? '🏆' : (game.result === 'draw' ? '🤝' : '❌');
         const resultClass = game.result === 'win' ? 'win' : (game.result === 'draw' ? 'draw' : 'loss');
+
+        // Build result text with score
+        let resultText = '';
+        if (game.result === 'win') {
+            resultText = `<span class="result-text result-win">🏆 ${t('games.win', 'Vitória')} ${game.score || ''}</span>`;
+        } else if (game.result === 'draw') {
+            resultText = `<span class="result-text result-draw">🤝 ${t('games.draw', 'Empate')} ${game.score || ''}</span>`;
+        } else {
+            resultText = `<span class="result-text result-loss">❌ ${t('games.loss', 'Derrota')} ${game.score || ''}</span>`;
+        }
 
         let opponentText = game.opponent_name;
         if (isDoubles && game.opponent2_name) {
@@ -454,12 +463,11 @@ function renderGamesList() {
         return `
             <div class="game-card ${resultClass}">
                 <div class="game-date">${formatDate(game.game_date)}</div>
-                <div class="game-result">${resultIcon}</div>
                 <div class="game-info">
                     <div class="game-type">${getGameTypeLabel(game.game_type)}</div>
                     <div class="game-opponent">${getVersusLabel()} ${opponentText}</div>
                     ${partnerText}
-                    ${game.score ? `<div class="game-score">${game.score}</div>` : ''}
+                    ${resultText}
                 </div>
                 <div class="game-actions">
                     <button onclick="editGame(${game.id})" class="btn-edit-small" title="Editar">✏️</button>
@@ -496,22 +504,18 @@ function editGame(gameId) {
         document.getElementById('opponentSelect').value = game.opponent_id;
     }
 
-    // Parse and fill score
-    initializeSets();
+    // Parse and fill score (new simple format: "3-2")
     if (game.score) {
-        const scoreMatch = game.score.match(/\(([^)]+)\)/);
-        if (scoreMatch) {
-            const setsStr = scoreMatch[1].split(', ');
-            setsStr.forEach((setStr, i) => {
-                const [you, opp] = setStr.split('-');
-                if (i > 0) addSet();
-                document.getElementById(`set-you-${i}`).value = you;
-                document.getElementById(`set-opp-${i}`).value = opp;
-                currentSets[i] = { you, opponent: opp };
-                onSetInputChange(i);
-            });
+        const match = game.score.match(/^(\d+)-(\d+)/);
+        if (match) {
+            document.getElementById('setsWon').value = match[1];
+            document.getElementById('setsLost').value = match[2];
         }
+    } else {
+        document.getElementById('setsWon').value = '';
+        document.getElementById('setsLost').value = '';
     }
+    updateSimpleResult();
 
     document.getElementById('gameLocation').value = game.location || '';
     document.getElementById('gameNotes').value = game.notes || '';
@@ -546,8 +550,10 @@ function openNewGameModal() {
     }
     toggleDoublesFields();
 
-    // Initialize sets
-    initializeSets();
+    // Reset score inputs
+    document.getElementById('setsWon').value = '';
+    document.getElementById('setsLost').value = '';
+    updateSimpleResult();
 
     openModal('newGameModal');
 }
@@ -691,33 +697,43 @@ function calculateResult() {
 }
 
 function updateResultDisplay() {
+    // Legacy function - now using updateSimpleResult
+    updateSimpleResult();
+}
+
+// New simplified result update function
+function updateSimpleResult() {
     const display = document.getElementById('resultDisplay');
     const resultInput = document.getElementById('gameResult');
     const scoreInput = document.getElementById('gameScore');
-    const calc = calculateResult();
 
-    // Build score string
-    const scoreStr = currentSets
-        .filter(s => s.you !== '' && s.opponent !== '')
-        .map(s => `${s.you}-${s.opponent}`)
-        .join(', ');
+    const setsWonInput = document.getElementById('setsWon');
+    const setsLostInput = document.getElementById('setsLost');
 
-    scoreInput.value = scoreStr || '';
+    const setsWon = parseInt(setsWonInput?.value) || 0;
+    const setsLost = parseInt(setsLostInput?.value) || 0;
 
-    if (calc.validSets === 0) {
-        display.innerHTML = `<span class="result-pending">${t('games.fillSets', 'Preencha os sets acima')}</span>`;
+    // Build score string (e.g., "3-2")
+    if (setsWonInput?.value !== '' && setsLostInput?.value !== '') {
+        scoreInput.value = `${setsWon}-${setsLost}`;
+    } else {
+        scoreInput.value = '';
+    }
+
+    if (setsWonInput?.value === '' || setsLostInput?.value === '') {
+        display.innerHTML = `<span class="result-pending">${t('games.fillScore', 'Preencha o placar acima')}</span>`;
         display.className = 'result-display';
         resultInput.value = '';
-    } else if (calc.result === 'win') {
-        display.innerHTML = `<span>🏆 ${t('games.winResult', 'VITÓRIA')} ${calc.setsWon}-${calc.setsLost}</span>`;
+    } else if (setsWon > setsLost) {
+        display.innerHTML = `<span>🏆 ${t('games.winResult', 'VITÓRIA')} ${setsWon}-${setsLost}</span>`;
         display.className = 'result-display result-win';
         resultInput.value = 'win';
-    } else if (calc.result === 'loss') {
-        display.innerHTML = `<span>❌ ${t('games.lossResult', 'DERROTA')} ${calc.setsWon}-${calc.setsLost}</span>`;
+    } else if (setsLost > setsWon) {
+        display.innerHTML = `<span>❌ ${t('games.lossResult', 'DERROTA')} ${setsWon}-${setsLost}</span>`;
         display.className = 'result-display result-loss';
         resultInput.value = 'loss';
-    } else if (calc.result === 'draw') {
-        display.innerHTML = `<span>🤝 ${t('games.drawResult', 'EMPATE')} ${calc.setsWon}-${calc.setsLost}</span>`;
+    } else {
+        display.innerHTML = `<span>🤝 ${t('games.drawResult', 'EMPATE')} ${setsWon}-${setsLost}</span>`;
         display.className = 'result-display result-draw';
         resultInput.value = 'draw';
     }
@@ -732,7 +748,15 @@ async function saveGame(event) {
     // Get result from calculated value
     const result = document.getElementById('gameResult').value;
     if (!result) {
-        alert('Por favor, preencha os sets para determinar o resultado do jogo');
+        alert(t('games.fillScoreAlert', 'Por favor, preencha o placar para determinar o resultado do jogo'));
+        return;
+    }
+
+    // Validate score is filled
+    const setsWon = document.getElementById('setsWon').value;
+    const setsLost = document.getElementById('setsLost').value;
+    if (setsWon === '' || setsLost === '') {
+        alert(t('games.fillScoreAlert', 'Por favor, preencha o placar para determinar o resultado do jogo'));
         return;
     }
 

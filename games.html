@@ -193,20 +193,27 @@
                         </div>
                     </div>
 
-                    <!-- Score by Sets -->
+                    <!-- Score in Sets -->
                     <div class="form-group">
-                        <label data-i18n="games.score">Placar por Set</label>
-                        <div id="setsContainer" class="sets-container">
-                            <!-- Sets will be generated dynamically -->
+                        <label data-i18n="games.scoreInSets">Placar (em sets)</label>
+                        <div class="score-input-container">
+                            <div class="score-input-group">
+                                <label data-i18n="games.you">Você</label>
+                                <input type="number" id="setsWon" min="0" max="10" value="" required class="score-input" oninput="updateSimpleResult()">
+                            </div>
+                            <span class="score-separator">x</span>
+                            <div class="score-input-group">
+                                <label data-i18n="games.opponent">Adv</label>
+                                <input type="number" id="setsLost" min="0" max="10" value="" required class="score-input" oninput="updateSimpleResult()">
+                            </div>
                         </div>
-                        <button type="button" onclick="addSet()" class="btn-link" id="addSetBtn" data-i18n="games.addSet">+ Adicionar Set</button>
                     </div>
 
                     <!-- Auto-calculated Result -->
                     <div class="form-group">
                         <label data-i18n="games.result">Resultado</label>
                         <div id="resultDisplay" class="result-display">
-                            <span class="result-pending" data-i18n="games.fillSets">Preencha os sets acima</span>
+                            <span class="result-pending" data-i18n="games.fillScore">Preencha o placar acima</span>
                         </div>
                         <input type="hidden" id="gameResult" name="result" value="">
                         <input type="hidden" id="gameScore" value="">
