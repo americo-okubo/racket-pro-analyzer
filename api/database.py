@@ -114,26 +114,35 @@ def dict_from_row(row):
 
 def save_to_cloud():
     """Save database to Cloud Storage (production only)."""
+    print(f"[DB] save_to_cloud called. IS_PRODUCTION={IS_PRODUCTION}, DATABASE_PATH={DATABASE_PATH}")
     if IS_PRODUCTION:
         try:
             from .storage_manager import get_storage_manager
             storage = get_storage_manager()
-            storage.save_database(DATABASE_PATH)
+            result = storage.save_database(DATABASE_PATH)
+            print(f"[DB] save_database result: {result}")
         except Exception as e:
             print(f"[DB] Error saving to Cloud Storage: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 def ensure_db_initialized():
     """Ensure database is initialized (called on app startup)."""
+    print(f"[DB] ensure_db_initialized called. IS_PRODUCTION={IS_PRODUCTION}, DATABASE_PATH={DATABASE_PATH}")
+
     # In production, try to load existing database from Cloud Storage
     if IS_PRODUCTION:
         try:
             from .storage_manager import get_storage_manager
             storage = get_storage_manager()
-            storage.load_database(DATABASE_PATH)
-            print(f"[DB] Loaded database from Cloud Storage")
+            result = storage.load_database(DATABASE_PATH)
+            print(f"[DB] load_database result: {result}")
         except Exception as e:
             print(f"[DB] Could not load database from GCS (will create new): {e}")
+            import traceback
+            traceback.print_exc()
 
     # Initialize tables (creates them if they don't exist)
     init_db()
+    print(f"[DB] Database initialized at {DATABASE_PATH}")
