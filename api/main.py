@@ -14,7 +14,7 @@ import jwt
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
-from api.database import get_db_connection, dict_from_row, ensure_db_initialized
+from api.database import get_db_connection, dict_from_row, ensure_db_initialized, save_to_cloud
 from api.models import (
     UserCreate, UserResponse,
     PlayerCreate, PlayerUpdate, PlayerResponse,
@@ -271,6 +271,9 @@ async def create_player(player: PlayerCreate, user_id: int = Depends(verify_toke
     new_player = dict_from_row(cursor.fetchone())
     conn.close()
 
+    # Save to Cloud Storage
+    save_to_cloud()
+
     return new_player
 
 
@@ -306,6 +309,9 @@ async def update_player(player_id: int, player: PlayerUpdate, user_id: int = Dep
     updated_player = dict_from_row(cursor.fetchone())
     conn.close()
 
+    # Save to Cloud Storage
+    save_to_cloud()
+
     return updated_player
 
 
@@ -334,6 +340,9 @@ async def delete_player(player_id: int, user_id: int = Depends(verify_token)):
     cursor.execute("DELETE FROM players WHERE id = ?", (player_id,))
     conn.commit()
     conn.close()
+
+    # Save to Cloud Storage
+    save_to_cloud()
 
     return {"message": "Jogador excluído com sucesso"}
 
@@ -436,6 +445,9 @@ async def create_game(game: GameCreate, user_id: int = Depends(verify_token)):
     new_game = dict_from_row(cursor.fetchone())
     conn.close()
 
+    # Save to Cloud Storage
+    save_to_cloud()
+
     return new_game
 
 
@@ -482,6 +494,9 @@ async def update_game(game_id: int, game: GameUpdate, user_id: int = Depends(ver
     updated_game = dict_from_row(cursor.fetchone())
     conn.close()
 
+    # Save to Cloud Storage
+    save_to_cloud()
+
     return updated_game
 
 
@@ -500,6 +515,9 @@ async def delete_game(game_id: int, user_id: int = Depends(verify_token)):
     cursor.execute("DELETE FROM games WHERE id = ?", (game_id,))
     conn.commit()
     conn.close()
+
+    # Save to Cloud Storage
+    save_to_cloud()
 
     return {"message": "Jogo excluído com sucesso"}
 

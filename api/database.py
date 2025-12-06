@@ -1,16 +1,26 @@
 """
 Racket Pro Analyzer - Database Setup
+Uses Google Cloud Storage for persistence across container restarts
 """
 
 import sqlite3
 import os
 from datetime import datetime
+from pathlib import Path
 
-# Use /tmp for Cloud Run (writable) or local path for development
-if os.environ.get("ENVIRONMENT") == "production":
-    DATABASE_PATH = "/tmp/racket_analyzer.db"
+# Check if running in production (Cloud Run)
+IS_PRODUCTION = os.environ.get("K_SERVICE") is not None or os.environ.get("ENVIRONMENT") == "production"
+
+# Database file path
+if IS_PRODUCTION:
+    # Use /tmp for Cloud Run (writable directory)
+    DB_DIR = Path("/tmp")
 else:
-    DATABASE_PATH = os.path.join(os.path.dirname(__file__), "racket_analyzer.db")
+    # Use local path for development
+    DB_DIR = Path(__file__).parent
+
+DB_DIR.mkdir(parents=True, exist_ok=True)
+DATABASE_PATH = str(DB_DIR / "racket_analyzer.db")
 
 
 def get_db_connection():
@@ -102,7 +112,28 @@ def dict_from_row(row):
     return dict(row)
 
 
-# Initialize database on first connection
+def save_to_cloud():
+    """Save database to Cloud Storage (production only)."""
+    if IS_PRODUCTION:
+        try:
+            from .storage_manager import get_storage_manager
+            storage = get_storage_manager()
+            storage.save_database(DATABASE_PATH)
+        except Exception as e:
+            print(f"[DB] Error saving to Cloud Storage: {e}")
+
+
 def ensure_db_initialized():
     """Ensure database is initialized (called on app startup)."""
+    # In production, try to load existing database from Cloud Storage
+    if IS_PRODUCTION:
+        try:
+            from .storage_manager import get_storage_manager
+            storage = get_storage_manager()
+            storage.load_database(DATABASE_PATH)
+            print(f"[DB] Loaded database from Cloud Storage")
+        except Exception as e:
+            print(f"[DB] Could not load database from GCS (will create new): {e}")
+
+    # Initialize tables (creates them if they don't exist)
     init_db()
