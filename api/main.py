@@ -10,17 +10,28 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
 import jwt
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
-from api.database import get_db_connection, dict_from_row, ensure_db_initialized, save_to_cloud
+from api.database import (
+    get_db_connection, dict_from_row, ensure_db_initialized, save_to_cloud,
+    create_user, authenticate_user, get_user_by_email,
+    set_verification_code, verify_email as db_verify_email, is_email_verified,
+    update_user_password
+)
 from api.models import (
     UserCreate, UserResponse,
     PlayerCreate, PlayerUpdate, PlayerResponse,
     GameCreate, GameUpdate, GameResponse,
     SportStatistics, OverallStatistics,
     SPORTS, LEVELS, PLAY_STYLES, HANDS, GAME_TYPES, RESULTS
+)
+from api.auth import create_access_token as auth_create_token, get_password_hash
+from api.email_service import (
+    generate_verification_code, get_verification_code_expiry,
+    send_verification_email, send_welcome_email, send_password_reset_email
 )
 
 # =============================================================================
@@ -117,6 +128,40 @@ def get_or_create_user(email: str, name: str = None, picture: str = None):
 
 
 # =============================================================================
+# AUTH MODELS
+# =============================================================================
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+    name: str = None
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+
+# =============================================================================
 # AUTH ENDPOINTS
 # =============================================================================
 
@@ -173,6 +218,267 @@ async def dev_auth(data: dict):
     return {
         "token": access_token,
         "user": user
+    }
+
+
+# =============================================================================
+# EMAIL/PASSWORD AUTH ENDPOINTS
+# =============================================================================
+
+@app.post("/api/auth/register")
+async def register(data: RegisterRequest):
+    """Register a new user with email/password - email verification is optional"""
+
+    # Create user (email_verified=False by default)
+    user = create_user(
+        email=data.email,
+        password=data.password,
+        name=data.name,
+        plan="free"
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email já cadastrado"
+        )
+
+    # Generate verification code
+    verification_code = generate_verification_code()
+    expires_at = get_verification_code_expiry()
+
+    # Save verification code
+    set_verification_code(user["id"], verification_code, expires_at)
+
+    # Send verification email (best effort, don't block registration)
+    email_sent = send_verification_email(data.email, verification_code, data.name or "")
+
+    if not email_sent:
+        print(f"[REGISTER] WARNING: Failed to send verification email to {data.email}")
+
+    # Create access token immediately - user can login without verification
+    access_token = auth_create_token(
+        data={"sub": str(user["id"]), "email": user["email"], "plan": user["plan"]}
+    )
+
+    return {
+        "message": "Cadastro realizado com sucesso! Você já pode usar o aplicativo.",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user.get("name"),
+            "plan": user["plan"],
+            "email_verified": user.get("email_verified", False)
+        },
+        "email_verification_sent": email_sent
+    }
+
+
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def login(data: LoginRequest):
+    """Login with email/password and get JWT access token"""
+
+    # Authenticate user
+    user = authenticate_user(data.email, data.password)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Email ou senha inválidos"
+        )
+
+    # Generate JWT token
+    access_token = auth_create_token({
+        "sub": str(user["id"]),
+        "email": user["email"],
+        "plan": user["plan"]
+    })
+
+    # Prepare user response dict
+    user_response = {
+        "id": user["id"],
+        "email": user["email"],
+        "name": user.get("name"),
+        "plan": user["plan"],
+        "email_verified": user.get("email_verified", False)
+    }
+
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_response
+    )
+
+
+@app.post("/api/auth/verify-email")
+async def verify_email_endpoint(data: VerifyEmailRequest):
+    """Verify email with code sent to user"""
+
+    # Get user by email
+    user = get_user_by_email(data.email)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+
+    # Verify email with code
+    verified = db_verify_email(user["id"], data.code)
+
+    if not verified:
+        raise HTTPException(
+            status_code=400,
+            detail="Código inválido ou expirado"
+        )
+
+    # Send welcome email
+    send_welcome_email(data.email, user.get("name", ""))
+
+    # Generate JWT token for automatic login
+    access_token = auth_create_token({
+        "sub": str(user["id"]),
+        "email": user["email"],
+        "plan": user.get("plan", "free")
+    })
+
+    return {
+        "message": "Email verificado com sucesso!",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "plan": user.get("plan", "free")
+        }
+    }
+
+
+@app.post("/api/auth/resend-verification")
+async def resend_verification(data: ResendVerificationRequest):
+    """Resend verification code to user email"""
+
+    # Get user by email
+    user = get_user_by_email(data.email)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+
+    # Check if already verified
+    if is_email_verified(user["id"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Email já verificado"
+        )
+
+    # Generate new verification code
+    verification_code = generate_verification_code()
+    expires_at = get_verification_code_expiry()
+
+    # Save new verification code
+    set_verification_code(user["id"], verification_code, expires_at)
+
+    # Send verification email
+    email_sent = send_verification_email(data.email, verification_code, user.get("name", ""))
+
+    if not email_sent:
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao enviar email de verificação"
+        )
+
+    return {
+        "message": "Código reenviado com sucesso",
+        "email": data.email
+    }
+
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Request password reset - sends verification code to email (requires verified email)"""
+
+    # Check if user exists
+    user = get_user_by_email(data.email)
+
+    if not user:
+        # Don't reveal if email exists or not (security best practice)
+        return {
+            "message": "Se este email estiver cadastrado e verificado, você receberá um código de redefinição.",
+            "email": data.email
+        }
+
+    # Check if email is verified
+    if not is_email_verified(user["id"]):
+        return {
+            "message": "Se este email estiver cadastrado e verificado, você receberá um código de redefinição.",
+            "email": data.email,
+            "email_not_verified": True
+        }
+
+    # Generate reset code
+    reset_code = generate_verification_code()
+    expires_at = get_verification_code_expiry()
+
+    # Save reset code
+    set_verification_code(user["id"], reset_code, expires_at)
+
+    # Send password reset email
+    email_sent = send_password_reset_email(data.email, reset_code, user.get("name", ""))
+
+    return {
+        "message": "Se este email estiver cadastrado, você receberá um código de redefinição.",
+        "email": data.email,
+        "email_sent": email_sent
+    }
+
+
+@app.post("/api/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Reset password with verification code"""
+
+    # Get user by email
+    user = get_user_by_email(data.email)
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado"
+        )
+
+    # Verify reset code
+    code_valid = db_verify_email(user["id"], data.code)
+
+    if not code_valid:
+        raise HTTPException(
+            status_code=400,
+            detail="Código inválido ou expirado. Solicite um novo código."
+        )
+
+    # Validate new password
+    if len(data.new_password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="A senha deve ter no mínimo 6 caracteres"
+        )
+
+    # Hash new password and update
+    hashed_password = get_password_hash(data.new_password)
+    success = update_user_password(user["id"], hashed_password)
+
+    if not success:
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao atualizar senha"
+        )
+
+    return {
+        "message": "Senha redefinida com sucesso! Você já pode fazer login com a nova senha.",
+        "email": data.email
     }
 
 

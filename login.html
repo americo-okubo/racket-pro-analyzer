@@ -5,52 +5,778 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Racket Pro">
+    <meta name="theme-color" content="#667eea">
     <title>Login - Racket Pro Analyzer</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="icon" type="image/png" href="/static/images/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/images/icon-192.png">
 
     <!-- i18n -->
     <script src="/static/js/i18n.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a67d8;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --surface-color: #ffffff;
+            --background-color: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: var(--surface-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 120px;
+            height: 120px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* Language Selector */
+        .language-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .language-flag {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid transparent;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--background-color);
+        }
+
+        .language-flag img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .language-flag:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .language-flag.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: var(--background-color);
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.error {
+            background: #fef0f0;
+            color: var(--danger-color);
+            border: 1px solid #fad9d9;
+            display: block;
+        }
+
+        .message.success {
+            background: #f0fdf4;
+            color: var(--success-color);
+            border: 1px solid #d1f7d9;
+            display: block;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .divider span {
+            padding: 0 12px;
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 12px;
+            background: white;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-google:hover {
+            background: var(--background-color);
+            border-color: #d1d5db;
+        }
+
+        .btn-google img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .privacy-notice {
+            background: var(--background-color);
+            border-left: 4px solid var(--primary-color);
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .privacy-notice strong {
+            color: var(--text-primary);
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 12px;
+        }
+
+        .warning-box strong {
+            color: #92400e;
+        }
+
+        .warning-box ul {
+            margin: 8px 0 0 20px;
+            color: #92400e;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-top: 2px;
+        }
+
+        .link {
+            color: var(--primary-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 480px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .login-container {
+                padding: 24px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .code-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 8px;
+            font-weight: bold;
+        }
+
+        .modal-btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .modal-btn-secondary {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-btn-cancel {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+    </style>
 </head>
 <body>
-    <main class="login-container">
-        <div class="login-card">
-            <img src="/static/images/icon-192.png" alt="Logo" class="login-logo">
-            <h1>🏸 Racket Pro Analyzer</h1>
-            <p data-i18n="login.subtitle">Registre e analise suas partidas de esportes de raquete</p>
+    <!-- Immediate redirect check -->
+    <script>
+        (function() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect') || '/';
+                window.location.replace(redirect);
+            }
+        })();
+    </script>
 
-            <div class="sports-preview">
-                <span class="sport-icon">🏓</span>
-                <span class="sport-icon">🏸</span>
-                <span class="sport-icon">🎾</span>
-                <span class="sport-icon">🟠</span>
-                <span class="sport-icon">🏖️</span>
-                <span class="sport-icon">🥒</span>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="/static/images/icon-192.png" alt="Racket Pro Analyzer Logo">
+            </div>
+            <h1>Racket Pro Analyzer</h1>
+            <p class="subtitle" data-i18n="login.subtitle">Registre e analise suas partidas</p>
+        </div>
+
+        <!-- Language Selector -->
+        <div class="language-selector">
+            <div class="language-flag" data-lang="pt-BR" onclick="changeLanguage('pt-BR')" title="Portugus (Brasil)">
+                <img src="/static/images/flag-br.svg" alt="Portugus">
+            </div>
+            <div class="language-flag" data-lang="en-US" onclick="changeLanguage('en-US')" title="English (US)">
+                <img src="/static/images/flag-us.svg" alt="English">
+            </div>
+            <div class="language-flag" data-lang="ja-JP" onclick="changeLanguage('ja-JP')" title="Japanese">
+                <img src="/static/images/flag-jp.svg" alt="Japanese">
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('login')" data-i18n="login.loginTab">Entrar</button>
+            <button class="tab" onclick="switchTab('register')" data-i18n="login.registerTab">Cadastrar</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="form-section active" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="loginEmail" data-i18n="login.email">Email</label>
+                <input type="email" id="loginEmail" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword" data-i18n="login.password">Senha</label>
+                <input type="password" id="loginPassword" required placeholder="Sua senha">
+            </div>
+            <button type="submit" class="submit-btn" data-i18n="login.loginButton">Entrar</button>
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" onclick="showForgotPasswordModal(); return false;" class="link" data-i18n="login.forgotPassword">Esqueci minha senha</a>
+            </div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="form-section" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label for="registerName" data-i18n="login.fullName">Nome</label>
+                <input type="text" id="registerName" placeholder="Seu nome">
             </div>
 
-            <button onclick="loginWithGoogle()" class="btn-google">
-                <img src="/static/images/google-icon.svg" alt="Google">
-                <span data-i18n="login.googleButton">Entrar com Google</span>
-            </button>
+            <div class="form-group">
+                <label for="registerEmail" data-i18n="login.email">Email</label>
+                <input type="email" id="registerEmail" required placeholder="seu@email.com">
+            </div>
 
-            <p class="login-note" data-i18n="login.note">
-                Use sua conta Google para acessar o aplicativo de forma segura.
-            </p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="registerPassword" data-i18n="login.password">Senha</label>
+                    <input type="password" id="registerPassword" required placeholder="Mnimo 6 caracteres" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="registerPasswordConfirm" data-i18n="login.confirmPassword">Confirmar Senha</label>
+                    <input type="password" id="registerPasswordConfirm" required placeholder="Digite novamente">
+                </div>
+            </div>
+
+            <div class="privacy-notice">
+                <strong data-i18n="login.privacyTitle">Privacidade e Proteo de Dados</strong><br>
+                <span data-i18n="login.privacyText">Seus dados sero utilizados apenas para melhorar sua experincia no aplicativo.</span>
+
+                <div class="warning-box">
+                    <strong>Importante sobre Validao de Email:</strong>
+                    <ul>
+                        <li><strong>Recuperao de senha:</strong> Apenas disponvel para emails validados</li>
+                        <li><strong>Recomendao:</strong> Valide seu email aps o cadastro</li>
+                    </ul>
+                </div>
+            </div>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="acceptPrivacy" required>
+                <span>
+                    <span data-i18n="login.privacyAcceptPrefix">Li e aceito a</span>
+                    <a href="#" class="link" data-i18n="login.privacyPolicyLink">Poltica de Privacidade</a>
+                </span>
+            </label>
+
+            <button type="submit" class="submit-btn" data-i18n="login.createAccount">Criar Conta</button>
+        </form>
+
+        <div class="divider">
+            <span data-i18n="login.or">ou</span>
         </div>
-    </main>
+
+        <button onclick="loginWithGoogle()" class="btn-google">
+            <img src="/static/images/google-icon.svg" alt="Google">
+            <span data-i18n="login.googleButton">Entrar com Google</span>
+        </button>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <!-- Email Verification Modal -->
+    <div id="verificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="icon"></div>
+                <h2 data-i18n="login.verifyEmail">Verifique seu Email</h2>
+                <p data-i18n="login.verifyEmailMessage">Enviamos um cdigo de 6 dgitos para:</p>
+                <p id="verificationEmail" style="font-weight: bold; color: #667eea; margin-top: 8px;"></p>
+                <div class="warning-box" style="text-align: left; margin-top: 16px;">
+                    <p style="color: #92400e; font-size: 13px; margin: 0;">
+                        <strong>Ateno:</strong> Verifique a pasta de SPAM se no encontrar o email.
+                    </p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;" data-i18n="login.verificationCode">Cdigo de Verificao:</label>
+                <input type="text" id="verificationCodeInput" class="code-input" maxlength="6" placeholder="000000" autocomplete="off">
+                <p style="font-size: 12px; color: #64748b; margin-top: 8px;" data-i18n="login.codeExpires">O cdigo expira em 30 minutos</p>
+            </div>
+
+            <button onclick="verifyEmail()" class="modal-btn-primary" data-i18n="login.verifyButton">Verificar Email</button>
+            <button onclick="resendVerificationCode()" class="modal-btn-secondary" data-i18n="login.resendCode">Reenviar Cdigo</button>
+
+            <div id="verificationMessage" class="message" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="icon"></div>
+                <h2 data-i18n="login.forgotPasswordTitle">Esqueci minha Senha</h2>
+                <p data-i18n="login.forgotPasswordMessage">Digite seu email para receber um cdigo de redefinio</p>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;" data-i18n="login.email">Email:</label>
+                <input type="email" id="forgotPasswordEmail" placeholder="seu@email.com" style="width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;" required>
+            </div>
+
+            <button onclick="requestPasswordReset()" class="modal-btn-primary" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" data-i18n="login.sendResetCode">Enviar Cdigo</button>
+            <button onclick="closeForgotPasswordModal()" class="modal-btn-cancel" data-i18n="login.cancel">Cancelar</button>
+
+            <div id="forgotPasswordMessage" class="message" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="icon"></div>
+                <h2 data-i18n="login.resetPasswordTitle">Redefinir Senha</h2>
+                <p data-i18n="login.resetPasswordMessage">Digite o cdigo recebido e sua nova senha</p>
+                <p id="resetPasswordEmail" style="font-weight: bold; color: #f59e0b; margin-top: 8px;"></p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;" data-i18n="login.resetCode">Cdigo de Redefinio:</label>
+                <input type="text" id="resetCode" class="code-input" maxlength="6" placeholder="000000" autocomplete="off">
+                <p style="font-size: 12px; color: #64748b; margin-top: 8px;" data-i18n="login.codeExpires">O cdigo expira em 30 minutos</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;" data-i18n="login.newPassword">Nova Senha:</label>
+                <input type="password" id="newPassword" placeholder="Mnimo 6 caracteres" style="width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;" required>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500;" data-i18n="login.confirmPassword">Confirmar Senha:</label>
+                <input type="password" id="confirmPassword" placeholder="Digite novamente" style="width: 100%; padding: 16px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;" required>
+            </div>
+
+            <button onclick="resetPassword()" class="modal-btn-primary" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" data-i18n="login.resetPasswordButton">Redefinir Senha</button>
+            <button onclick="requestPasswordReset()" class="modal-btn-secondary" style="border-color: #f59e0b; color: #f59e0b;" data-i18n="login.resendCode">Reenviar Cdigo</button>
+            <button onclick="closeResetPasswordModal()" class="modal-btn-cancel" data-i18n="login.cancel">Cancelar</button>
+
+            <div id="resetPasswordMessage" class="message" style="margin-top: 16px;"></div>
+        </div>
+    </div>
 
     <!-- Google Sign-In -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <script>
+        const API_URL = window.location.origin;
         const GOOGLE_CLIENT_ID = '123444066656-tffnuqtcqkv0jsocvu5o1up0e0g0r2e4.apps.googleusercontent.com';
-        const DEV_MODE = !GOOGLE_CLIENT_ID || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.form-section').forEach(form => form.classList.remove('active'));
+            if (tab === 'login') {
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.getElementById('registerForm').classList.add('active');
+            }
+
+            hideMessage();
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+        }
+
+        function hideMessage() {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = '';
+            messageEl.className = 'message';
+        }
+
+        // ===== EMAIL/PASSWORD LOGIN =====
+        async function handleLogin(event) {
+            event.preventDefault();
+            hideMessage();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    showMessage('Login realizado com sucesso! Redirecionando...', 'success');
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect') || '/';
+
+                    setTimeout(() => {
+                        window.location.href = redirect;
+                    }, 1000);
+                } else {
+                    showMessage(data.detail || 'Erro ao fazer login', 'error');
+                }
+            } catch (error) {
+                showMessage('Erro de conexo. Tente novamente.', 'error');
+                console.error('Login error:', error);
+            }
+        }
+
+        // ===== EMAIL/PASSWORD REGISTER =====
+        async function handleRegister(event) {
+            event.preventDefault();
+            hideMessage();
+
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+
+            if (password !== passwordConfirm) {
+                showMessage('As senhas no coincidem', 'error');
+                return;
+            }
+
+            if (!document.getElementById('acceptPrivacy').checked) {
+                showMessage('Voc precisa aceitar a poltica de privacidade', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    const emailSentMsg = data.email_verification_sent
+                        ? ' Um email de verificao foi enviado.'
+                        : '';
+
+                    showMessage('Conta criada com sucesso!' + emailSentMsg + ' Redirecionando...', 'success');
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect') || '/';
+
+                    setTimeout(() => {
+                        window.location.href = redirect;
+                    }, 2000);
+                } else {
+                    showMessage(data.detail || 'Erro ao criar conta', 'error');
+                }
+            } catch (error) {
+                showMessage('Erro de conexo. Tente novamente.', 'error');
+                console.error('Register error:', error);
+            }
+        }
+
+        // ===== GOOGLE LOGIN =====
         function loginWithGoogle() {
-            // If in dev mode and no Google Client ID, use dev login
-            if (DEV_MODE && !GOOGLE_CLIENT_ID) {
-                loginWithDev();
+            if (!GOOGLE_CLIENT_ID) {
+                showMessage('Google login no configurado', 'error');
                 return;
             }
 
@@ -61,61 +787,246 @@
             google.accounts.id.prompt();
         }
 
-        async function loginWithDev() {
-            try {
-                const res = await fetch('/api/auth/dev', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: 'dev@test.com',
-                        name: 'Dev User'
-                    })
-                });
-
-                if (!res.ok) throw new Error('Falha na autenticação de desenvolvimento');
-
-                const data = await res.json();
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                // Redirect
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirect = urlParams.get('redirect') || '/';
-                window.location.href = redirect;
-            } catch (error) {
-                console.error('Erro no login dev:', error);
-                alert('Erro ao fazer login de desenvolvimento. Verifique se o servidor está rodando.');
-            }
-        }
-
         async function handleGoogleResponse(response) {
             try {
-                const res = await fetch('/api/auth/google', {
+                const res = await fetch(`${API_URL}/api/auth/google`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ credential: response.credential })
                 });
 
-                if (!res.ok) throw new Error('Falha na autenticação');
+                if (!res.ok) throw new Error('Falha na autenticao');
 
                 const data = await res.json();
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
-                // Redirect
                 const urlParams = new URLSearchParams(window.location.search);
                 const redirect = urlParams.get('redirect') || '/';
                 window.location.href = redirect;
             } catch (error) {
-                console.error('Erro no login:', error);
-                alert('Erro ao fazer login. Tente novamente.');
+                console.error('Google login error:', error);
+                showMessage('Erro ao fazer login com Google. Tente novamente.', 'error');
             }
         }
 
-        // Check if already logged in
-        if (localStorage.getItem('token')) {
-            window.location.href = '/';
+        // ===== EMAIL VERIFICATION =====
+        function showVerificationModal(email) {
+            document.getElementById('verificationEmail').textContent = email;
+            document.getElementById('verificationCodeInput').value = '';
+            document.getElementById('verificationModal').style.display = 'flex';
+            sessionStorage.setItem('verificationEmail', email);
+            setTimeout(() => {
+                document.getElementById('verificationCodeInput').focus();
+            }, 100);
         }
+
+        function hideVerificationModal() {
+            document.getElementById('verificationModal').style.display = 'none';
+        }
+
+        async function verifyEmail() {
+            const email = sessionStorage.getItem('verificationEmail');
+            const code = document.getElementById('verificationCodeInput').value.trim();
+
+            if (!code || code.length !== 6) {
+                showVerificationMessage('Por favor, insira o cdigo de 6 dgitos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    showVerificationMessage('Email verificado com sucesso!', 'success');
+
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const redirect = urlParams.get('redirect') || '/';
+
+                    setTimeout(() => {
+                        window.location.href = redirect;
+                    }, 1500);
+                } else {
+                    showVerificationMessage(data.detail || 'Cdigo invlido ou expirado', 'error');
+                }
+            } catch (error) {
+                showVerificationMessage('Erro de conexo. Tente novamente.', 'error');
+            }
+        }
+
+        async function resendVerificationCode() {
+            const email = sessionStorage.getItem('verificationEmail');
+
+            if (!email) {
+                showVerificationMessage('Email no encontrado. Por favor, registre-se novamente.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showVerificationMessage('Cdigo reenviado! Verifique seu email.', 'success');
+                } else {
+                    showVerificationMessage(data.detail || 'Erro ao reenviar cdigo', 'error');
+                }
+            } catch (error) {
+                showVerificationMessage('Erro de conexo. Tente novamente.', 'error');
+            }
+        }
+
+        function showVerificationMessage(text, type) {
+            const el = document.getElementById('verificationMessage');
+            el.textContent = text;
+            el.className = `message ${type}`;
+        }
+
+        // ===== PASSWORD RESET =====
+        let resetPasswordEmail = '';
+
+        function showForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'flex';
+            document.getElementById('forgotPasswordEmail').value = '';
+            document.getElementById('forgotPasswordMessage').className = 'message';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+        }
+
+        async function requestPasswordReset() {
+            const email = document.getElementById('forgotPasswordEmail').value || resetPasswordEmail;
+
+            if (!email) {
+                showForgotPasswordMessage('Por favor, digite seu email', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resetPasswordEmail = email;
+                    showForgotPasswordMessage('Cdigo enviado! Verifique seu email.', 'success');
+
+                    setTimeout(() => {
+                        closeForgotPasswordModal();
+                        showResetPasswordModal();
+                    }, 1500);
+                } else {
+                    showForgotPasswordMessage(data.detail || 'Erro ao solicitar redefinio', 'error');
+                }
+            } catch (error) {
+                showForgotPasswordMessage('Erro de conexo. Tente novamente.', 'error');
+            }
+        }
+
+        function showResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'flex';
+            document.getElementById('resetPasswordEmail').textContent = resetPasswordEmail;
+            document.getElementById('resetCode').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('resetPasswordMessage').className = 'message';
+        }
+
+        function closeResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'none';
+            resetPasswordEmail = '';
+        }
+
+        async function resetPassword() {
+            const code = document.getElementById('resetCode').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!code || !newPassword || !confirmPassword) {
+                showResetPasswordMessage('Por favor, preencha todos os campos', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showResetPasswordMessage('A senha deve ter no mnimo 6 caracteres', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showResetPasswordMessage('As senhas no coincidem', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: resetPasswordEmail,
+                        code: code,
+                        new_password: newPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResetPasswordMessage('Senha redefinida com sucesso!', 'success');
+
+                    setTimeout(() => {
+                        closeResetPasswordModal();
+                        showMessage('Use sua nova senha para fazer login', 'success');
+                    }, 2000);
+                } else {
+                    showResetPasswordMessage(data.detail || 'Erro ao redefinir senha', 'error');
+                }
+            } catch (error) {
+                showResetPasswordMessage('Erro de conexo. Tente novamente.', 'error');
+            }
+        }
+
+        function showForgotPasswordMessage(text, type) {
+            const el = document.getElementById('forgotPasswordMessage');
+            el.textContent = text;
+            el.className = `message ${type}`;
+        }
+
+        function showResetPasswordMessage(text, type) {
+            const el = document.getElementById('resetPasswordMessage');
+            el.textContent = text;
+            el.className = `message ${type}`;
+        }
+
+        // Allow Enter key to verify
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('verificationCodeInput');
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        verifyEmail();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

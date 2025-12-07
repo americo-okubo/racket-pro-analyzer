@@ -12,6 +12,8 @@ COPY api/__init__.py ./api/
 COPY api/models.py ./api/
 COPY api/database.py ./api/
 COPY api/storage_manager.py ./api/
+COPY api/auth.py ./api/
+COPY api/email_service.py ./api/
 COPY api/main.py ./api/
 
 # Copiar arquivos estáticos e HTML
