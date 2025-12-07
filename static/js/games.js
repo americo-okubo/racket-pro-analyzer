@@ -9,6 +9,11 @@ let currentSport = null;
 let players = [];
 let games = [];
 
+// Export variables to window for voice-game-entry.js access
+window.players = players;
+window.currentToken = currentToken;
+window.currentSport = currentSport;
+
 // =============================================================================
 // TRANSLATION HELPERS
 // =============================================================================
@@ -43,6 +48,7 @@ function getVersusLabel() {
 document.addEventListener('DOMContentLoaded', async () => {
     // Check authentication
     currentToken = localStorage.getItem('token');
+    window.currentToken = currentToken; // Update window reference for voice-game-entry.js
     if (!currentToken) {
         window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.href);
         return;
@@ -52,6 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Get sport from URL
     currentSport = getSportFromUrl();
+    window.currentSport = currentSport; // Update window reference for voice-game-entry.js
     const sportConfig = getSportConfig(currentSport);
 
     if (!sportConfig) {
@@ -199,6 +206,7 @@ function logout() {
 async function loadPlayers() {
     try {
         players = await apiRequest(`/api/players?sport=${currentSport}`);
+        window.players = players; // Update window reference for voice-game-entry.js
         populatePlayerSelects();
     } catch (error) {
         console.error('Erro ao carregar jogadores:', error);
