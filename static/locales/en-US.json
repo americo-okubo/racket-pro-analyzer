@@ -29,6 +29,7 @@
         "welcome": "Welcome to Racket Pro Analyzer!",
         "description": "Track your racket sports matches and follow your evolution with detailed statistics.",
         "loginGoogle": "Sign in with Google",
+        "loginButton": "Login / Register",
         "chooseSport": "Choose your sport",
         "overallStats": "📊 Overall Statistics"
     },

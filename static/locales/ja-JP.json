@@ -29,6 +29,7 @@
         "welcome": "Racket Pro Analyzerへようこそ！",
         "description": "ラケットスポーツの試合を記録し、詳細な統計で成長を追跡しましょう。",
         "loginGoogle": "Googleでサインイン",
+        "loginButton": "ログイン / 新規登録",
         "chooseSport": "スポーツを選択",
         "overallStats": "📊 全体統計"
     },

@@ -29,6 +29,7 @@
         "welcome": "Bem-vindo ao Racket Pro Analyzer!",
         "description": "Registre suas partidas de esportes de raquete e acompanhe sua evolução com estatísticas detalhadas.",
         "loginGoogle": "Entrar com Google",
+        "loginButton": "Entrar / Cadastrar",
         "chooseSport": "Escolha seu esporte",
         "overallStats": "📊 Estatísticas Gerais"
     },

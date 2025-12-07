@@ -62,86 +62,16 @@ function showLoggedOutState() {
 // AUTHENTICATION
 // =============================================================================
 
-const GOOGLE_CLIENT_ID = '123444066656-tffnuqtcqkv0jsocvu5o1up0e0g0r2e4.apps.googleusercontent.com';
-const DEV_MODE = !GOOGLE_CLIENT_ID || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-function loginWithGoogle() {
-    // If in dev mode and no Google Client ID, use dev login
-    if (DEV_MODE && !GOOGLE_CLIENT_ID) {
-        loginWithDev();
-        return;
-    }
-
-    google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse
-    });
-    google.accounts.id.prompt();
-}
-
-async function loginWithDev() {
-    try {
-        const res = await fetch(`${API_URL}/api/auth/dev`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                email: 'dev@test.com',
-                name: 'Dev User'
-            })
-        });
-
-        if (!res.ok) {
-            throw new Error('Falha na autenticação de desenvolvimento');
-        }
-
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        currentToken = data.token;
-        currentUser = data.user;
-
-        showLoggedInState();
-        await loadOverallStatistics();
-    } catch (error) {
-        console.error('Erro no login de dev:', error);
-        alert('Erro ao fazer login de desenvolvimento. Verifique se o servidor está rodando.');
-    }
-}
-
-async function handleGoogleResponse(response) {
-    try {
-        const res = await fetch(`${API_URL}/api/auth/google`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ credential: response.credential })
-        });
-
-        if (!res.ok) {
-            throw new Error('Falha na autenticação');
-        }
-
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        currentToken = data.token;
-        currentUser = data.user;
-
-        showLoggedInState();
-        await loadOverallStatistics();
-    } catch (error) {
-        console.error('Erro no login:', error);
-        alert('Erro ao fazer login. Tente novamente.');
-    }
-}
-
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     currentToken = null;
     currentUser = null;
-    window.location.href = '/';
+    window.location.href = '/login.html';
+}
+
+function goToLogin() {
+    window.location.href = '/login.html';
 }
 
 // =============================================================================
