@@ -85,10 +85,11 @@ def verify_token(authorization: Optional[str] = Header(None)):
     try:
         token = authorization.replace("Bearer ", "")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("user_id")
+        # Support both "user_id" (Google auth) and "sub" (email/password auth) formats
+        user_id = payload.get("user_id") or payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Token inválido")
-        return user_id
+        return int(user_id)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado")
     except jwt.InvalidTokenError:
