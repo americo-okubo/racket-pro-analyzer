@@ -92,6 +92,7 @@
         "filterAllResults": "Todos resultados",
         "filterWins": "Vitórias",
         "filterLosses": "Derrotas",
+        "filterDraws": "Empates",
         "newGameTitle": "➕ Registrar Jogo",
         "date": "Data",
         "gameType": "Tipo de Jogo",

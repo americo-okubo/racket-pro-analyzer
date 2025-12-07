@@ -92,6 +92,7 @@
         "filterAllResults": "すべての結果",
         "filterWins": "勝利",
         "filterLosses": "敗北",
+        "filterDraws": "引分",
         "newGameTitle": "➕ 試合を登録",
         "date": "日付",
         "gameType": "試合タイプ",
