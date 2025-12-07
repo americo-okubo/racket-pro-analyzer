@@ -60,7 +60,8 @@ async def startup_event():
     ensure_db_initialized()
 
 # Configuration
-SECRET_KEY = os.environ.get("SECRET_KEY", "your-secret-key-change-in-production")
+# Import SECRET_KEY from auth module to ensure consistency
+from api.auth import SECRET_KEY
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
