@@ -354,6 +354,7 @@ header {
 
 /* Stats Compact (inline version) */
 .stats-compact {
+    margin-top: 20px;
     margin-bottom: 12px;
 }
 
@@ -678,7 +679,8 @@ header {
 }
 
 .btn-danger-small,
-.btn-edit-small {
+.btn-edit-small,
+.btn-view-small {
     background: none;
     border: none;
     cursor: pointer;
@@ -688,8 +690,47 @@ header {
 }
 
 .btn-danger-small:hover,
-.btn-edit-small:hover {
+.btn-edit-small:hover,
+.btn-view-small:hover {
     opacity: 1;
+}
+
+/* Game Details Modal */
+.game-details-content {
+    padding: 8px 0;
+}
+
+.game-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.game-detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: var(--text-light);
+    font-size: 0.9em;
+}
+
+.detail-value {
+    font-weight: 600;
+    text-align: right;
+}
+
+.detail-value.result-win {
+    color: var(--success-color);
+}
+
+.detail-value.result-loss {
+    color: var(--danger-color);
+}
+
+.modal-small {
+    max-width: 400px;
 }
 
 /* =============================================================================
@@ -1626,6 +1667,19 @@ header {
 .h2h-stat-label {
     font-size: 0.8em;
     color: var(--text-light);
+}
+
+.h2h-analysis {
+    background: var(--bg-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-top: 12px;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.h2h-analysis p {
+    margin: 0;
 }
 
 .h2h-games-section h3 {

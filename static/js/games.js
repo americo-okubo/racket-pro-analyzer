@@ -636,12 +636,93 @@ function renderGamesList() {
                     ${resultText}
                 </div>
                 <div class="game-actions">
-                    <button onclick="editGame(${game.id})" class="btn-edit-small" title="Editar">✏️</button>
-                    <button onclick="deleteGame(${game.id})" class="btn-danger-small" title="Excluir">🗑️</button>
+                    <button onclick="viewGameDetails(${game.id})" class="btn-view-small" title="${t('games.viewDetails', 'Ver detalhes')}">👁️</button>
+                    <button onclick="editGame(${game.id})" class="btn-edit-small" title="${t('games.edit', 'Editar')}">✏️</button>
+                    <button onclick="deleteGame(${game.id})" class="btn-danger-small" title="${t('games.delete', 'Excluir')}">🗑️</button>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+function viewGameDetails(gameId) {
+    const game = games.find(g => g.id === gameId);
+    if (!game) return;
+
+    const isDoubles = game.game_type === 'doubles';
+    const opponent = players.find(p => p.id === game.opponent_id);
+    const opponent2 = isDoubles ? players.find(p => p.id === game.opponent2_id) : null;
+    const partner = isDoubles ? players.find(p => p.id === game.partner_id) : null;
+
+    const opponentName = opponent ? opponent.name : t('common.unknown', 'Desconhecido');
+    const opponent2Name = opponent2 ? opponent2.name : '';
+    const partnerName = partner ? partner.name : '';
+
+    const resultClass = game.result === 'win' ? 'win' : 'loss';
+    const resultText = game.result === 'win' ? t('stats.win', 'Vitória') : t('stats.loss', 'Derrota');
+
+    // Get head-to-head stats against opponent
+    const h2hGames = games.filter(g => g.opponent_id === game.opponent_id);
+    const h2hWins = h2hGames.filter(g => g.result === 'win').length;
+    const h2hTotal = h2hGames.length;
+    const h2hRate = h2hTotal > 0 ? Math.round((h2hWins / h2hTotal) * 100) : 0;
+
+    let content = `
+        <div class="game-details-content">
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.date', 'Data')}:</span>
+                <span class="detail-value">${formatDate(game.game_date)}</span>
+            </div>
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.gameType', 'Tipo')}:</span>
+                <span class="detail-value">${getGameTypeLabel(game.game_type)}</span>
+            </div>
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.opponent', 'Adversário')}:</span>
+                <span class="detail-value">${opponentName}${opponent2Name ? ' & ' + opponent2Name : ''}</span>
+            </div>
+            ${partnerName ? `
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.partner', 'Parceiro')}:</span>
+                <span class="detail-value">${partnerName}</span>
+            </div>
+            ` : ''}
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.score', 'Placar')}:</span>
+                <span class="detail-value">${game.score || '-'}</span>
+            </div>
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.result', 'Resultado')}:</span>
+                <span class="detail-value result-${resultClass}">${resultText}</span>
+            </div>
+            <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border-color);">
+            <div class="game-detail-row">
+                <span class="detail-label">${t('analytics.h2hVs', 'Histórico vs')} ${opponentName}:</span>
+                <span class="detail-value">${h2hWins}V/${h2hTotal - h2hWins}D (${h2hRate}%)</span>
+            </div>
+        </div>
+    `;
+
+    // Create or update modal
+    let modal = document.getElementById('gameDetailsModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'gameDetailsModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content modal-small">
+                <div class="modal-header">
+                    <h2 id="gameDetailsTitle">${t('games.gameDetails', 'Detalhes do Jogo')}</h2>
+                    <button onclick="closeModal('gameDetailsModal')" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body" id="gameDetailsBody"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('gameDetailsBody').innerHTML = content;
+    modal.style.display = 'flex';
 }
 
 let editingGameId = null;
@@ -2405,6 +2486,9 @@ function buildH2HSummary(playerName, stats, type, role) {
     const lossesAsWinsLabel = stats.losses !== 1 ? t('stats.wins', 'vitórias').toLowerCase() : t('games.win', 'vitória').toLowerCase();
     const gamesLabel = stats.total !== 1 ? t('analytics.games', 'jogos') : t('analytics.game', 'jogo');
 
+    // Generate analysis text
+    const analysisHtml = generateH2HAnalysis(playerName, stats, type, role);
+
     return `
         <div class="h2h-player left">
             <div class="h2h-player-name">${youLabel}</div>
@@ -2435,7 +2519,89 @@ function buildH2HSummary(playerName, stats, type, role) {
             </div>
         </div>
         <div class="streak-container" style="grid-column: 1 / -1;">${streakHtml}</div>
+        <div class="h2h-analysis" style="grid-column: 1 / -1;">${analysisHtml}</div>
     `;
+}
+
+function generateH2HAnalysis(playerName, stats, type, role) {
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
+    const parts = [];
+
+    // Dominance analysis
+    if (stats.winRate >= 70) {
+        if (role === 'partner') {
+            if (isPt) parts.push(`<span class="analysis-positive">Excelente parceria!</span> Vocês têm ${stats.winRate}% de aproveitamento juntos.`);
+            else if (isJa) parts.push(`<span class="analysis-positive">素晴らしいパートナーシップ！</span> 一緒に${stats.winRate}%の勝率。`);
+            else parts.push(`<span class="analysis-positive">Excellent partnership!</span> You have ${stats.winRate}% win rate together.`);
+        } else {
+            if (isPt) parts.push(`<span class="analysis-positive">Você domina este confronto!</span> Aproveitamento de ${stats.winRate}%.`);
+            else if (isJa) parts.push(`<span class="analysis-positive">この対戦を支配しています！</span> 勝率${stats.winRate}%。`);
+            else parts.push(`<span class="analysis-positive">You dominate this matchup!</span> ${stats.winRate}% win rate.`);
+        }
+    } else if (stats.winRate <= 30) {
+        if (role === 'partner') {
+            if (isPt) parts.push(`<span class="analysis-negative">Parceria difícil.</span> Apenas ${stats.winRate}% de aproveitamento juntos.`);
+            else if (isJa) parts.push(`<span class="analysis-negative">難しいパートナーシップ。</span> 一緒に${stats.winRate}%の勝率のみ。`);
+            else parts.push(`<span class="analysis-negative">Difficult partnership.</span> Only ${stats.winRate}% win rate together.`);
+        } else {
+            if (isPt) parts.push(`<span class="analysis-negative">Adversário difícil!</span> Apenas ${stats.winRate}% de aproveitamento.`);
+            else if (isJa) parts.push(`<span class="analysis-negative">難しい相手！</span> 勝率は${stats.winRate}%のみ。`);
+            else parts.push(`<span class="analysis-negative">Tough opponent!</span> Only ${stats.winRate}% win rate.`);
+        }
+    } else if (stats.winRate >= 45 && stats.winRate <= 55) {
+        if (isPt) parts.push(`<span class="analysis-highlight">Confronto equilibrado!</span> ${stats.wins} vitórias x ${stats.losses} derrotas.`);
+        else if (isJa) parts.push(`<span class="analysis-highlight">バランスの取れた対戦！</span> ${stats.wins}勝 x ${stats.losses}敗。`);
+        else parts.push(`<span class="analysis-highlight">Balanced matchup!</span> ${stats.wins} wins x ${stats.losses} losses.`);
+    }
+
+    // Recent trend (streak)
+    if (stats.currentStreak >= 3) {
+        if (stats.lastResult === 'win') {
+            if (isPt) parts.push(`🔥 Em alta! ${stats.currentStreak} vitórias consecutivas.`);
+            else if (isJa) parts.push(`🔥 好調！ ${stats.currentStreak}連勝中。`);
+            else parts.push(`🔥 Hot streak! ${stats.currentStreak} consecutive wins.`);
+        } else {
+            if (isPt) parts.push(`⚠️ Atenção: ${stats.currentStreak} derrotas consecutivas.`);
+            else if (isJa) parts.push(`⚠️ 注意: ${stats.currentStreak}連敗中。`);
+            else parts.push(`⚠️ Warning: ${stats.currentStreak} consecutive losses.`);
+        }
+    }
+
+    // Set balance insight
+    if (stats.setBalance > 5) {
+        if (isPt) parts.push(`Saldo de sets muito favorável: <span class="analysis-positive">+${stats.setBalance}</span>.`);
+        else if (isJa) parts.push(`セットバランスが非常に有利: <span class="analysis-positive">+${stats.setBalance}</span>。`);
+        else parts.push(`Very favorable set balance: <span class="analysis-positive">+${stats.setBalance}</span>.`);
+    } else if (stats.setBalance < -5) {
+        if (isPt) parts.push(`Saldo de sets desfavorável: <span class="analysis-negative">${stats.setBalance}</span>.`);
+        else if (isJa) parts.push(`セットバランスが不利: <span class="analysis-negative">${stats.setBalance}</span>。`);
+        else parts.push(`Unfavorable set balance: <span class="analysis-negative">${stats.setBalance}</span>.`);
+    }
+
+    // Last game info
+    if (stats.lastGame) {
+        const lastDate = formatDateLabel(stats.lastGame);
+        if (stats.lastResult === 'win') {
+            if (isPt) parts.push(`Último jogo (${lastDate}): <span class="analysis-positive">Vitória</span>.`);
+            else if (isJa) parts.push(`最後の試合 (${lastDate}): <span class="analysis-positive">勝利</span>。`);
+            else parts.push(`Last game (${lastDate}): <span class="analysis-positive">Win</span>.`);
+        } else {
+            if (isPt) parts.push(`Último jogo (${lastDate}): <span class="analysis-negative">Derrota</span>.`);
+            else if (isJa) parts.push(`最後の試合 (${lastDate}): <span class="analysis-negative">敗北</span>。`);
+            else parts.push(`Last game (${lastDate}): <span class="analysis-negative">Loss</span>.`);
+        }
+    }
+
+    if (parts.length === 0) {
+        if (isPt) return `<p>Histórico de ${stats.total} ${stats.total === 1 ? 'jogo' : 'jogos'} registrado(s).</p>`;
+        else if (isJa) return `<p>${stats.total}試合の履歴。</p>`;
+        else return `<p>History of ${stats.total} ${stats.total === 1 ? 'game' : 'games'} recorded.</p>`;
+    }
+
+    return `<p>${parts.join(' ')}</p>`;
 }
 
 function buildH2HGamesList(playerGames, type, role, selectedPlayer) {
