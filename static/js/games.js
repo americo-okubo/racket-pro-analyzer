@@ -370,6 +370,7 @@ function renderPlayersList() {
                 </p>
             </div>
             <div class="player-actions">
+                <button onclick="openPlayerProfile(${player.id})" class="btn-profile-small" title="${t('players.viewProfile', 'Ver Perfil')}">👤</button>
                 <button onclick="editPlayer(${player.id})" class="btn-edit-small" title="${t('common.edit', 'Editar')}">✏️</button>
                 <button onclick="deletePlayer(${player.id})" class="btn-danger-small" title="${t('common.delete', 'Excluir')}">🗑️</button>
             </div>
@@ -412,6 +413,160 @@ async function deletePlayer(playerId) {
     } catch (error) {
         console.error('Erro ao excluir jogador:', error);
         alert('Erro ao excluir jogador: ' + error.message);
+    }
+}
+
+// =============================================================================
+// PLAYER PROFILE
+// =============================================================================
+
+function openPlayerProfile(playerId) {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
+    // Get all games involving this player
+    const gamesAgainst = games.filter(g =>
+        g.opponent_id === playerId || g.opponent2_id === playerId
+    );
+    const gamesWith = games.filter(g => g.partner_id === playerId);
+
+    // Calculate stats
+    const winsAgainst = gamesAgainst.filter(g => g.result === 'win').length;
+    const lossesAgainst = gamesAgainst.filter(g => g.result === 'loss').length;
+    const winsWith = gamesWith.filter(g => g.result === 'win').length;
+    const lossesWith = gamesWith.filter(g => g.result === 'loss').length;
+
+    const winRateAgainst = gamesAgainst.length > 0 ? Math.round((winsAgainst / gamesAgainst.length) * 100) : 0;
+    const winRateWith = gamesWith.length > 0 ? Math.round((winsWith / gamesWith.length) * 100) : 0;
+
+    // Sort games by date (most recent first)
+    const allPlayerGames = [...gamesAgainst.map(g => ({...g, role: 'opponent'})),
+                           ...gamesWith.map(g => ({...g, role: 'partner'}))]
+        .sort((a, b) => b.game_date.localeCompare(a.game_date));
+
+    // Build profile HTML
+    const handLabel = player.dominant_hand === 'left'
+        ? (isPt ? '🫲 Canhoto' : isJa ? '🫲 左利き' : '🫲 Left-handed')
+        : (isPt ? '🫱 Destro' : isJa ? '🫱 右利き' : '🫱 Right-handed');
+
+    const profileTitle = isPt ? 'Perfil do Jogador' : isJa ? 'プレーヤープロファイル' : 'Player Profile';
+    const statsTitle = isPt ? 'Estatísticas' : isJa ? '統計' : 'Statistics';
+    const historyTitle = isPt ? 'Histórico de Jogos' : isJa ? '試合履歴' : 'Game History';
+    const asOpponentLabel = isPt ? 'Como Adversário' : isJa ? '対戦相手として' : 'As Opponent';
+    const asPartnerLabel = isPt ? 'Como Parceiro' : isJa ? 'パートナーとして' : 'As Partner';
+    const gamesLabel = isPt ? 'jogos' : isJa ? '試合' : 'games';
+    const winsLabel = isPt ? 'vitórias' : isJa ? '勝利' : 'wins';
+    const lossesLabel = isPt ? 'derrotas' : isJa ? '敗北' : 'losses';
+    const noGamesLabel = isPt ? 'Nenhum jogo registrado' : isJa ? '試合記録なし' : 'No games recorded';
+    const winLabel = isPt ? 'VITÓRIA' : isJa ? '勝利' : 'WIN';
+    const lossLabel = isPt ? 'DERROTA' : isJa ? '敗北' : 'LOSS';
+    const vsLabel = isPt ? 'vs' : isJa ? 'vs' : 'vs';
+    const withLabel = isPt ? 'com' : isJa ? 'と' : 'with';
+
+    let html = `
+        <div class="player-profile-header">
+            <h2>👤 ${player.name}</h2>
+            <p class="player-profile-details">
+                ${handLabel} • ${translateLevel(player.level)} • ${translateStyle(player.play_style)} • ${translateAgeGroup(player.age_group)}
+            </p>
+            ${player.notes ? `<p class="player-profile-notes">📝 ${player.notes}</p>` : ''}
+        </div>
+
+        <div class="player-profile-stats">
+            <h3>📊 ${statsTitle}</h3>
+            <div class="stats-grid">
+                <div class="stat-box ${winRateAgainst >= 50 ? 'stat-positive' : 'stat-negative'}">
+                    <h4>⚔️ ${asOpponentLabel}</h4>
+                    <div class="stat-value">${winRateAgainst}%</div>
+                    <div class="stat-detail">${gamesAgainst.length} ${gamesLabel} (${winsAgainst} ${winsLabel} / ${lossesAgainst} ${lossesLabel})</div>
+                </div>
+                <div class="stat-box ${winRateWith >= 50 ? 'stat-positive' : 'stat-negative'}">
+                    <h4>🤝 ${asPartnerLabel}</h4>
+                    <div class="stat-value">${winRateWith}%</div>
+                    <div class="stat-detail">${gamesWith.length} ${gamesLabel} (${winsWith} ${winsLabel} / ${lossesWith} ${lossesLabel})</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="player-profile-history">
+            <h3>📋 ${historyTitle}</h3>
+            <div class="history-list">
+    `;
+
+    if (allPlayerGames.length === 0) {
+        html += `<p class="no-games">${noGamesLabel}</p>`;
+    } else {
+        allPlayerGames.slice(0, 20).forEach(game => {
+            const gameDate = formatDateLabel(game.game_date);
+            const isWin = game.result === 'win';
+            const resultClass = isWin ? 'result-win' : 'result-loss';
+            const resultText = isWin ? winLabel : lossLabel;
+
+            // Get opponent/partner names
+            let opponentName = '';
+            if (game.role === 'opponent') {
+                // This player was the opponent
+                opponentName = player.name;
+            } else {
+                // This player was the partner, show opponent
+                const opponent = players.find(p => p.id === game.opponent_id);
+                opponentName = opponent ? opponent.name : 'Unknown';
+            }
+
+            const roleIcon = game.role === 'opponent' ? '⚔️' : '🤝';
+            const roleLabel = game.role === 'opponent' ? vsLabel : withLabel;
+            const gameTypeIcon = game.game_type === 'doubles' ? '👥' : '👤';
+
+            html += `
+                <div class="history-item ${resultClass}">
+                    <div class="history-date">${gameDate}</div>
+                    <div class="history-details">
+                        <span class="history-type">${gameTypeIcon}</span>
+                        <span class="history-role">${roleIcon} ${roleLabel} ${player.name}</span>
+                        ${game.score ? `<span class="history-score">${game.score}</span>` : ''}
+                    </div>
+                    <div class="history-result ${resultClass}">${resultText}</div>
+                </div>
+            `;
+        });
+
+        if (allPlayerGames.length > 20) {
+            const moreGames = allPlayerGames.length - 20;
+            const moreLabel = isPt ? `+ ${moreGames} jogos anteriores` : isJa ? `+ ${moreGames}試合` : `+ ${moreGames} more games`;
+            html += `<p class="more-games">${moreLabel}</p>`;
+        }
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    // Show modal
+    const modal = document.getElementById('playerProfileModal');
+    if (!modal) {
+        // Create modal if it doesn't exist
+        const modalHtml = `
+            <div id="playerProfileModal" class="modal" style="display: flex;">
+                <div class="modal-content modal-large">
+                    <div class="modal-header">
+                        <h2>👤 ${profileTitle}</h2>
+                        <button onclick="closeModal('playerProfileModal')" class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body" id="playerProfileContent">
+                        ${html}
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    } else {
+        document.getElementById('playerProfileContent').innerHTML = html;
+        modal.style.display = 'flex';
     }
 }
 
