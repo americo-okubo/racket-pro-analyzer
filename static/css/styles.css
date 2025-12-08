@@ -899,6 +899,102 @@ header {
     grid-column: 1 / -1;
 }
 
+/* Chart Analysis */
+.chart-analysis {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(52, 152, 219, 0.08);
+    border-left: 3px solid var(--primary-color);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 0.85em;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.chart-analysis:empty {
+    display: none;
+}
+
+.chart-analysis .analysis-highlight {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.chart-analysis .analysis-positive {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.chart-analysis .analysis-negative {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
+/* Comprehensive Analysis Section */
+.comprehensive-analysis-section {
+    margin-top: 32px;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.comprehensive-analysis-section h3 {
+    margin-bottom: 16px;
+    color: var(--text-color);
+    font-size: 1.2em;
+}
+
+.comprehensive-analysis-content {
+    display: grid;
+    gap: 16px;
+}
+
+.analysis-card {
+    padding: 16px;
+    background: var(--bg-color);
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--primary-color);
+}
+
+.analysis-card.strength {
+    border-left-color: var(--success-color);
+}
+
+.analysis-card.weakness {
+    border-left-color: var(--danger-color);
+}
+
+.analysis-card.tip {
+    border-left-color: var(--warning-color);
+}
+
+.analysis-card h4 {
+    margin-bottom: 8px;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analysis-card p {
+    margin: 0;
+    font-size: 0.9em;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.analysis-card ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.analysis-card li {
+    margin-bottom: 4px;
+}
+
 /* =============================================================================
    Analytics Tabs
    ============================================================================= */

@@ -971,6 +971,11 @@ function renderChartsForTab(tab) {
         renderDayOfWeekChart();
         renderSetBalanceChart();
         renderFrequencyChart();
+        // Generate analyses after charts are rendered
+        setTimeout(() => {
+            generateChartAnalyses();
+            generateComprehensiveAnalysis();
+        }, 100);
     }
 }
 
@@ -2897,6 +2902,485 @@ function translateAgeGroup(ageGroup) {
         '60_plus': '60+'
     };
     return t(ageGroupKeys[ageGroup], fallbacks[ageGroup] || ageGroup || '20-39');
+}
+
+// =============================================================================
+// CHART ANALYSIS FUNCTIONS
+// =============================================================================
+
+function generateChartAnalyses() {
+    generateTypeChartAnalysis();
+    generateEvolutionChartAnalysis();
+    generateStreakChartAnalysis();
+    generateDayOfWeekChartAnalysis();
+    generateSetBalanceChartAnalysis();
+    generateFrequencyChartAnalysis();
+}
+
+function generateTypeChartAnalysis() {
+    const el = document.getElementById('typeChartAnalysis');
+    if (!el) return;
+
+    const singlesGames = filteredGames.filter(g => g.game_type === 'singles');
+    const doublesGames = filteredGames.filter(g => g.game_type === 'doubles');
+    const singlesWins = singlesGames.filter(g => g.result === 'win').length;
+    const doublesWins = doublesGames.filter(g => g.result === 'win').length;
+    const singlesRate = singlesGames.length > 0 ? Math.round((singlesWins / singlesGames.length) * 100) : 0;
+    const doublesRate = doublesGames.length > 0 ? Math.round((doublesWins / doublesGames.length) * 100) : 0;
+
+    if (filteredGames.length === 0) {
+        el.innerHTML = '';
+        return;
+    }
+
+    let analysis = '';
+    const betterMode = singlesRate > doublesRate ? 'singles' : (doublesRate > singlesRate ? 'doubles' : 'equal');
+    const diff = Math.abs(singlesRate - doublesRate);
+
+    if (betterMode === 'singles' && diff >= 10) {
+        analysis = t('analysis.betterAtSingles', `Você tem melhor desempenho em <span class="analysis-positive">simples</span> (${singlesRate}% vs ${doublesRate}%). Considere focar mais em partidas individuais.`);
+    } else if (betterMode === 'doubles' && diff >= 10) {
+        analysis = t('analysis.betterAtDoubles', `Você tem melhor desempenho em <span class="analysis-positive">duplas</span> (${doublesRate}% vs ${singlesRate}%). O trabalho em equipe é seu forte!`);
+    } else {
+        analysis = t('analysis.balancedModes', `Desempenho <span class="analysis-highlight">equilibrado</span> entre simples (${singlesRate}%) e duplas (${doublesRate}%).`);
+    }
+
+    // Add volume info
+    const totalGames = filteredGames.length;
+    const singlesPercent = Math.round((singlesGames.length / totalGames) * 100);
+    if (singlesPercent > 70) {
+        analysis += ' ' + t('analysis.mostlySingles', 'Você joga majoritariamente simples.');
+    } else if (singlesPercent < 30) {
+        analysis += ' ' + t('analysis.mostlyDoubles', 'Você joga majoritariamente duplas.');
+    }
+
+    el.innerHTML = analysis;
+}
+
+function generateEvolutionChartAnalysis() {
+    const el = document.getElementById('evolutionChartAnalysis');
+    if (!el) return;
+
+    if (filteredGames.length < 5) {
+        el.innerHTML = '';
+        return;
+    }
+
+    // Calculate trend
+    const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
+    const totalGames = sortedGames.length;
+    const firstHalf = sortedGames.slice(0, Math.floor(totalGames / 2));
+    const secondHalf = sortedGames.slice(Math.floor(totalGames / 2));
+
+    const firstHalfWinRate = firstHalf.length > 0 ? (firstHalf.filter(g => g.result === 'win').length / firstHalf.length) * 100 : 0;
+    const secondHalfWinRate = secondHalf.length > 0 ? (secondHalf.filter(g => g.result === 'win').length / secondHalf.length) * 100 : 0;
+    const trend = secondHalfWinRate - firstHalfWinRate;
+
+    // Current win rate
+    const currentWinRate = Math.round((filteredGames.filter(g => g.result === 'win').length / filteredGames.length) * 100);
+
+    let analysis = '';
+    if (trend > 5) {
+        analysis = t('analysis.improving', `<span class="analysis-positive">Tendência de melhora!</span> Sua taxa de vitória subiu ${Math.round(trend)}% na segunda metade do período.`);
+    } else if (trend < -5) {
+        analysis = t('analysis.declining', `<span class="analysis-negative">Tendência de queda.</span> Sua taxa de vitória caiu ${Math.round(Math.abs(trend))}% na segunda metade do período.`);
+    } else {
+        analysis = t('analysis.stable', `Taxa de vitória <span class="analysis-highlight">estável</span> em torno de ${currentWinRate}%.`);
+    }
+
+    el.innerHTML = analysis;
+}
+
+function generateStreakChartAnalysis() {
+    const el = document.getElementById('streakChartAnalysis');
+    if (!el) return;
+
+    if (filteredGames.length < 3) {
+        el.innerHTML = '';
+        return;
+    }
+
+    const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
+
+    // Calculate best/worst streaks
+    let currentStreak = 0;
+    let bestWinStreak = 0;
+    let worstLossStreak = 0;
+    let tempStreak = 0;
+    let lastResult = null;
+
+    sortedGames.forEach(game => {
+        if (game.result === lastResult) {
+            tempStreak++;
+        } else {
+            tempStreak = 1;
+        }
+
+        if (game.result === 'win') {
+            if (tempStreak > bestWinStreak) bestWinStreak = tempStreak;
+        } else {
+            if (tempStreak > worstLossStreak) worstLossStreak = tempStreak;
+        }
+
+        lastResult = game.result;
+        currentStreak = game.result === 'win' ? tempStreak : -tempStreak;
+    });
+
+    let analysis = '';
+    if (currentStreak > 0) {
+        analysis = t('analysis.currentWinStreak', `<span class="analysis-positive">Sequência atual: ${currentStreak} vitória(s)!</span>`);
+    } else if (currentStreak < 0) {
+        analysis = t('analysis.currentLossStreak', `<span class="analysis-negative">Sequência atual: ${Math.abs(currentStreak)} derrota(s).</span>`);
+    }
+
+    analysis += ' ' + t('analysis.streakRecords', `Recorde: ${bestWinStreak} vitórias seguidas. Pior momento: ${worstLossStreak} derrotas seguidas.`);
+
+    el.innerHTML = analysis;
+}
+
+function generateDayOfWeekChartAnalysis() {
+    const el = document.getElementById('dayOfWeekChartAnalysis');
+    if (!el) return;
+
+    if (filteredGames.length < 7) {
+        el.innerHTML = '';
+        return;
+    }
+
+    const dayNames = [
+        t('analytics.sunday', 'Domingo'),
+        t('analytics.monday', 'Segunda'),
+        t('analytics.tuesday', 'Terça'),
+        t('analytics.wednesday', 'Quarta'),
+        t('analytics.thursday', 'Quinta'),
+        t('analytics.friday', 'Sexta'),
+        t('analytics.saturday', 'Sábado')
+    ];
+
+    // Calculate stats by day
+    const dayStats = Array(7).fill(null).map(() => ({ total: 0, wins: 0 }));
+    filteredGames.forEach(game => {
+        const date = new Date(game.game_date + 'T12:00:00');
+        const dayOfWeek = date.getDay();
+        dayStats[dayOfWeek].total++;
+        if (game.result === 'win') dayStats[dayOfWeek].wins++;
+    });
+
+    // Find best and worst days (with minimum games)
+    let bestDay = -1, worstDay = -1;
+    let bestRate = -1, worstRate = 101;
+
+    dayStats.forEach((stat, day) => {
+        if (stat.total >= 3) {
+            const rate = (stat.wins / stat.total) * 100;
+            if (rate > bestRate) {
+                bestRate = rate;
+                bestDay = day;
+            }
+            if (rate < worstRate) {
+                worstRate = rate;
+                worstDay = day;
+            }
+        }
+    });
+
+    // Find most played day
+    const mostPlayedDay = dayStats.reduce((max, stat, day) => stat.total > dayStats[max].total ? day : max, 0);
+
+    let analysis = '';
+    if (bestDay >= 0 && worstDay >= 0 && bestDay !== worstDay) {
+        analysis = t('analysis.dayPerformance', `Melhor dia: <span class="analysis-positive">${dayNames[bestDay]}</span> (${Math.round(bestRate)}%). Pior dia: <span class="analysis-negative">${dayNames[worstDay]}</span> (${Math.round(worstRate)}%).`);
+    }
+
+    if (dayStats[mostPlayedDay].total > 0) {
+        analysis += ' ' + t('analysis.mostPlayedDay', `Você joga mais às <span class="analysis-highlight">${dayNames[mostPlayedDay]}s</span>.`);
+    }
+
+    el.innerHTML = analysis;
+}
+
+function generateSetBalanceChartAnalysis() {
+    const el = document.getElementById('setBalanceChartAnalysis');
+    if (!el) return;
+
+    if (filteredGames.length < 5) {
+        el.innerHTML = '';
+        return;
+    }
+
+    // Calculate total sets
+    let totalSetsWon = 0, totalSetsLost = 0;
+
+    filteredGames.forEach(game => {
+        const scoreData = parseScore(game.score);
+        if (scoreData.setsWon > 0 || scoreData.setsLost > 0) {
+            totalSetsWon += scoreData.setsWon;
+            totalSetsLost += scoreData.setsLost;
+        } else {
+            // Estimate
+            if (game.result === 'win') {
+                totalSetsWon += 2;
+                totalSetsLost += Math.random() < 0.6 ? 0 : 1;
+            } else {
+                totalSetsLost += 2;
+                totalSetsWon += Math.random() < 0.6 ? 0 : 1;
+            }
+        }
+    });
+
+    const totalSets = totalSetsWon + totalSetsLost;
+    const setWinRate = totalSets > 0 ? Math.round((totalSetsWon / totalSets) * 100) : 0;
+    const balance = totalSetsWon - totalSetsLost;
+
+    let analysis = t('analysis.setStats', `Total: <span class="analysis-positive">${totalSetsWon}</span> sets ganhos vs <span class="analysis-negative">${totalSetsLost}</span> perdidos.`);
+    analysis += ' ' + t('analysis.setWinRate', `Taxa de sets: <span class="analysis-highlight">${setWinRate}%</span>.`);
+
+    if (balance > 0) {
+        analysis += ' ' + t('analysis.positiveBalance', `Saldo positivo de +${balance} sets.`);
+    } else if (balance < 0) {
+        analysis += ' ' + t('analysis.negativeBalance', `Saldo negativo de ${balance} sets.`);
+    }
+
+    el.innerHTML = analysis;
+}
+
+function generateFrequencyChartAnalysis() {
+    const el = document.getElementById('frequencyChartAnalysis');
+    if (!el) return;
+
+    if (filteredGames.length < 5) {
+        el.innerHTML = '';
+        return;
+    }
+
+    // Calculate games per week
+    const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
+    const firstDate = new Date(sortedGames[0].game_date);
+    const lastDate = new Date(sortedGames[sortedGames.length - 1].game_date);
+    const weeks = Math.max(1, Math.ceil((lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000)));
+    const gamesPerWeek = (filteredGames.length / weeks).toFixed(1);
+
+    // Find most active month
+    const monthCounts = {};
+    filteredGames.forEach(game => {
+        const month = game.game_date.substring(0, 7);
+        monthCounts[month] = (monthCounts[month] || 0) + 1;
+    });
+
+    const sortedMonths = Object.entries(monthCounts).sort((a, b) => b[1] - a[1]);
+    const mostActiveMonth = sortedMonths[0];
+
+    let analysis = t('analysis.frequency', `Média de <span class="analysis-highlight">${gamesPerWeek}</span> jogos por semana.`);
+
+    if (mostActiveMonth) {
+        const [year, month] = mostActiveMonth[0].split('-');
+        const monthNames = [
+            t('months.jan', 'Jan'), t('months.feb', 'Fev'), t('months.mar', 'Mar'),
+            t('months.apr', 'Abr'), t('months.may', 'Mai'), t('months.jun', 'Jun'),
+            t('months.jul', 'Jul'), t('months.aug', 'Ago'), t('months.sep', 'Set'),
+            t('months.oct', 'Out'), t('months.nov', 'Nov'), t('months.dec', 'Dez')
+        ];
+        const monthName = monthNames[parseInt(month) - 1];
+        analysis += ' ' + t('analysis.mostActiveMonth', `Mês mais ativo: <span class="analysis-highlight">${monthName}/${year}</span> (${mostActiveMonth[1]} jogos).`);
+    }
+
+    el.innerHTML = analysis;
+}
+
+// =============================================================================
+// COMPREHENSIVE ANALYSIS
+// =============================================================================
+
+function generateComprehensiveAnalysis() {
+    const el = document.getElementById('comprehensiveAnalysis');
+    if (!el) return;
+
+    if (filteredGames.length < 10) {
+        el.innerHTML = `<p class="no-data">${t('analysis.needMoreGames', 'Registre mais partidas para ver uma análise detalhada.')}</p>`;
+        return;
+    }
+
+    const analysis = analyzePerformance();
+    let html = '';
+
+    // Strengths
+    if (analysis.strengths.length > 0) {
+        html += `
+            <div class="analysis-card strength">
+                <h4>💪 ${t('analysis.strengths', 'Pontos Fortes')}</h4>
+                <ul>
+                    ${analysis.strengths.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Weaknesses
+    if (analysis.weaknesses.length > 0) {
+        html += `
+            <div class="analysis-card weakness">
+                <h4>⚠️ ${t('analysis.weaknesses', 'Pontos a Melhorar')}</h4>
+                <ul>
+                    ${analysis.weaknesses.map(w => `<li>${w}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Tips
+    if (analysis.tips.length > 0) {
+        html += `
+            <div class="analysis-card tip">
+                <h4>💡 ${t('analysis.tips', 'Dicas para Melhorar')}</h4>
+                <ul>
+                    ${analysis.tips.map(tip => `<li>${tip}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Summary stats
+    html += `
+        <div class="analysis-card">
+            <h4>📊 ${t('analysis.summary', 'Resumo')}</h4>
+            <p>${analysis.summary}</p>
+        </div>
+    `;
+
+    el.innerHTML = html;
+}
+
+function analyzePerformance() {
+    const strengths = [];
+    const weaknesses = [];
+    const tips = [];
+
+    const totalGames = filteredGames.length;
+    const wins = filteredGames.filter(g => g.result === 'win').length;
+    const winRate = Math.round((wins / totalGames) * 100);
+
+    // Singles vs Doubles analysis
+    const singlesGames = filteredGames.filter(g => g.game_type === 'singles');
+    const doublesGames = filteredGames.filter(g => g.game_type === 'doubles');
+    const singlesWinRate = singlesGames.length > 3 ? Math.round((singlesGames.filter(g => g.result === 'win').length / singlesGames.length) * 100) : null;
+    const doublesWinRate = doublesGames.length > 3 ? Math.round((doublesGames.filter(g => g.result === 'win').length / doublesGames.length) * 100) : null;
+
+    if (singlesWinRate !== null && doublesWinRate !== null) {
+        if (singlesWinRate - doublesWinRate > 15) {
+            strengths.push(t('analysis.strengthSingles', `Excelente em simples (${singlesWinRate}% de vitórias)`));
+            weaknesses.push(t('analysis.weakDoubles', `Desempenho inferior em duplas (${doublesWinRate}%)`));
+            tips.push(t('analysis.tipDoubles', 'Pratique mais comunicação e posicionamento com parceiros de duplas'));
+        } else if (doublesWinRate - singlesWinRate > 15) {
+            strengths.push(t('analysis.strengthDoubles', `Excelente em duplas (${doublesWinRate}% de vitórias)`));
+            weaknesses.push(t('analysis.weakSingles', `Desempenho inferior em simples (${singlesWinRate}%)`));
+            tips.push(t('analysis.tipSingles', 'Trabalhe condicionamento físico e cobertura de quadra para simples'));
+        }
+    }
+
+    // Day of week analysis
+    const dayStats = Array(7).fill(null).map(() => ({ total: 0, wins: 0 }));
+    filteredGames.forEach(game => {
+        const date = new Date(game.game_date + 'T12:00:00');
+        const dayOfWeek = date.getDay();
+        dayStats[dayOfWeek].total++;
+        if (game.result === 'win') dayStats[dayOfWeek].wins++;
+    });
+
+    const dayNames = [
+        t('analytics.sunday', 'Domingo'), t('analytics.monday', 'Segunda'),
+        t('analytics.tuesday', 'Terça'), t('analytics.wednesday', 'Quarta'),
+        t('analytics.thursday', 'Quinta'), t('analytics.friday', 'Sexta'),
+        t('analytics.saturday', 'Sábado')
+    ];
+
+    let bestDay = -1, worstDay = -1;
+    let bestRate = -1, worstRate = 101;
+    dayStats.forEach((stat, day) => {
+        if (stat.total >= 5) {
+            const rate = (stat.wins / stat.total) * 100;
+            if (rate > bestRate) { bestRate = rate; bestDay = day; }
+            if (rate < worstRate) { worstRate = rate; worstDay = day; }
+        }
+    });
+
+    if (bestDay >= 0 && bestRate >= 80) {
+        strengths.push(t('analysis.strengthDay', `Ótimo desempenho às ${dayNames[bestDay]}s (${Math.round(bestRate)}%)`));
+    }
+    if (worstDay >= 0 && worstRate < 50) {
+        weaknesses.push(t('analysis.weakDay', `Desempenho fraco às ${dayNames[worstDay]}s (${Math.round(worstRate)}%)`));
+        tips.push(t('analysis.tipDay', `Considere ajustar horários ou preparação para jogos às ${dayNames[worstDay]}s`));
+    }
+
+    // Trend analysis
+    const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
+    const recentGames = sortedGames.slice(-20);
+    const olderGames = sortedGames.slice(0, -20);
+
+    if (recentGames.length >= 10 && olderGames.length >= 10) {
+        const recentWinRate = Math.round((recentGames.filter(g => g.result === 'win').length / recentGames.length) * 100);
+        const olderWinRate = Math.round((olderGames.filter(g => g.result === 'win').length / olderGames.length) * 100);
+
+        if (recentWinRate - olderWinRate > 10) {
+            strengths.push(t('analysis.improving', `Em fase de melhora (+${recentWinRate - olderWinRate}% nos últimos jogos)`));
+        } else if (olderWinRate - recentWinRate > 10) {
+            weaknesses.push(t('analysis.declining', `Desempenho em queda (-${olderWinRate - recentWinRate}% nos últimos jogos)`));
+            tips.push(t('analysis.tipRecovery', 'Revise fundamentos e considere descanso ou variação de treino'));
+        }
+    }
+
+    // Streak analysis
+    let currentStreak = 0;
+    let tempStreak = 0;
+    let lastResult = null;
+    sortedGames.forEach(game => {
+        if (game.result === lastResult) {
+            tempStreak++;
+        } else {
+            tempStreak = 1;
+        }
+        lastResult = game.result;
+        currentStreak = game.result === 'win' ? tempStreak : -tempStreak;
+    });
+
+    if (currentStreak >= 5) {
+        strengths.push(t('analysis.hotStreak', `Sequência quente de ${currentStreak} vitórias!`));
+    } else if (currentStreak <= -5) {
+        weaknesses.push(t('analysis.coldStreak', `Fase difícil com ${Math.abs(currentStreak)} derrotas seguidas`));
+        tips.push(t('analysis.tipStreak', 'Foque em jogos contra adversários mais fracos para recuperar confiança'));
+    }
+
+    // General win rate tips
+    if (winRate < 40) {
+        tips.push(t('analysis.tipLowWinRate', 'Considere treinos focados em fundamentos: saque, recepção e posicionamento'));
+        tips.push(t('analysis.tipAnalyze', 'Analise seus jogos para identificar erros recorrentes'));
+    } else if (winRate >= 70) {
+        tips.push(t('analysis.tipHighWinRate', 'Busque adversários mais desafiadores para continuar evoluindo'));
+    }
+
+    // Frequency tips
+    const firstDate = new Date(sortedGames[0].game_date);
+    const lastDate = new Date(sortedGames[sortedGames.length - 1].game_date);
+    const weeks = Math.max(1, Math.ceil((lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000)));
+    const gamesPerWeek = filteredGames.length / weeks;
+
+    if (gamesPerWeek < 1) {
+        tips.push(t('analysis.tipMoreGames', 'Jogue com mais frequência para manter ritmo e evolução'));
+    } else if (gamesPerWeek > 5) {
+        tips.push(t('analysis.tipRest', 'Atenção ao descanso - muitos jogos podem causar fadiga'));
+    }
+
+    // Build summary
+    let summaryParts = [];
+    summaryParts.push(t('analysis.summaryGames', `${totalGames} partidas analisadas`));
+    summaryParts.push(t('analysis.summaryWinRate', `${winRate}% de vitórias`));
+
+    if (singlesGames.length > 0 && doublesGames.length > 0) {
+        summaryParts.push(t('analysis.summarySplitGames', `${singlesGames.length} simples e ${doublesGames.length} duplas`));
+    }
+
+    const summary = summaryParts.join(' | ');
+
+    return { strengths, weaknesses, tips, summary };
 }
 
 // =============================================================================
