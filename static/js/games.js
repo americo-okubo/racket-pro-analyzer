@@ -2543,36 +2543,132 @@ function renderEvolutionChart() {
     let cumulativeWins = 0;
     let cumulativeTotal = 0;
     const labels = [];
-    const dataPoints = [];
+    const cumulativeRates = [];
+    const gamesPerDay = [];
+    const winsPerDay = [];
+    const movingAvgRates = [];
+
+    // For moving average calculation (last N games)
+    const movingWindowSize = 10;
+    const recentResults = [];
 
     sortedDates.forEach(date => {
-        cumulativeWins += dateStats[date].wins;
-        cumulativeTotal += dateStats[date].total;
-        const winRate = Math.round((cumulativeWins / cumulativeTotal) * 100);
-        dataPoints.push(winRate);
+        const dayWins = dateStats[date].wins;
+        const dayTotal = dateStats[date].total;
+
+        cumulativeWins += dayWins;
+        cumulativeTotal += dayTotal;
+
+        // Add results to moving window
+        for (let i = 0; i < dayTotal; i++) {
+            if (i < dayWins) {
+                recentResults.push(1);
+            } else {
+                recentResults.push(0);
+            }
+        }
+
+        // Calculate moving average (last N games)
+        const windowResults = recentResults.slice(-movingWindowSize);
+        const movingAvg = windowResults.length > 0
+            ? Math.round((windowResults.reduce((a, b) => a + b, 0) / windowResults.length) * 100)
+            : 0;
+
+        const cumulativeRate = Math.round((cumulativeWins / cumulativeTotal) * 100);
+
+        cumulativeRates.push(cumulativeRate);
+        gamesPerDay.push(dayTotal);
+        winsPerDay.push(dayWins);
+        movingAvgRates.push(movingAvg);
         labels.push(formatDateLabel(date));
     });
 
     charts.evolution = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels,
-            datasets: [{
-                label: t('analytics.winRatePct', 'Taxa de Vitória (%)'),
-                data: dataPoints,
-                borderColor: '#27ae60',
-                backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 5,
-                pointBackgroundColor: '#27ae60'
-            }]
+            datasets: [
+                {
+                    label: t('analytics.gamesOnDay', 'Jogos no Dia'),
+                    data: gamesPerDay,
+                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                    borderColor: '#3498db',
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                    order: 3
+                },
+                {
+                    label: t('analytics.winsOnDay', 'Vitórias no Dia'),
+                    data: winsPerDay,
+                    backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                    borderColor: '#27ae60',
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                    order: 2
+                },
+                {
+                    label: t('analytics.cumulativeRate', 'Taxa Acumulada (%)'),
+                    data: cumulativeRates,
+                    type: 'line',
+                    borderColor: '#9b59b6',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    pointRadius: 2,
+                    pointBackgroundColor: '#9b59b6',
+                    yAxisID: 'y1',
+                    order: 1
+                },
+                {
+                    label: t('analytics.movingAvg', 'Últimos 10 jogos (%)'),
+                    data: movingAvgRates,
+                    type: 'line',
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.3,
+                    pointRadius: 0,
+                    yAxisID: 'y1',
+                    order: 0
+                }
+            ]
         },
         options: {
             responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             scales: {
-                y: { beginAtZero: true, max: 100, title: { display: true, text: t('analytics.ratePct', 'Taxa (%)') } },
+                y: {
+                    beginAtZero: true,
+                    position: 'left',
+                    title: { display: true, text: t('stats.totalGames', 'Jogos') },
+                    ticks: { stepSize: 1 }
+                },
+                y1: {
+                    beginAtZero: true,
+                    max: 100,
+                    position: 'right',
+                    title: { display: true, text: t('analytics.ratePct', 'Taxa (%)') },
+                    grid: { drawOnChartArea: false }
+                },
                 x: { title: { display: true, text: t('analytics.date', 'Data') } }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.raw;
+                            if (context.datasetIndex >= 2) {
+                                return `${label}: ${value}%`;
+                            }
+                            return `${label}: ${value}`;
+                        }
+                    }
+                }
             }
         }
     });
