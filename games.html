@@ -545,6 +545,19 @@
         </div>
     </div>
 
+    <!-- Modal: Expanded Chart -->
+    <div id="expandedChartModal" class="modal" style="display: none;">
+        <div class="modal-content modal-fullscreen">
+            <div class="modal-header">
+                <h2 id="expandedChartTitle">Gráfico</h2>
+                <button onclick="closeExpandedChart()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body expanded-chart-body">
+                <canvas id="expandedChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Head-to-Head -->
     <div id="h2hModal" class="modal" style="display: none;">
         <div class="modal-content modal-large">

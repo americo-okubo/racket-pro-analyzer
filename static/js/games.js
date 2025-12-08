@@ -888,6 +888,10 @@ function openAnalyticsModal() {
     // Reset period filter to "all"
     document.getElementById('periodFilter').value = 'all';
     applyPeriodFilter();
+    // Initialize chart expansion after a small delay to ensure charts are rendered
+    setTimeout(() => {
+        initChartExpansion();
+    }, 200);
     // Apply translations to modal elements
     if (window.i18n && window.i18n.applyTranslations) {
         window.i18n.applyTranslations();
@@ -1015,10 +1019,11 @@ function populateAnalyticsSelects() {
     }
 }
 
-// Helper function to format date as DD/MM
+// Helper function to format date as DD/MM/YY (with year for clarity)
 function formatDateLabel(dateStr) {
     const parts = dateStr.split('-');
-    return `${parts[2]}/${parts[1]}`;
+    const year = parts[0].slice(-2); // Last 2 digits of year
+    return `${parts[2]}/${parts[1]}/${year}`;
 }
 
 // Helper function to parse score and get set balance
@@ -2805,7 +2810,7 @@ document.addEventListener('click', (e) => {
 
 function formatDate(dateStr) {
     const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
 function translateLevel(level) {
@@ -2853,3 +2858,121 @@ function translateAgeGroup(ageGroup) {
     };
     return t(ageGroupKeys[ageGroup], fallbacks[ageGroup] || ageGroup || '20-39');
 }
+
+// =============================================================================
+// CHART EXPAND FUNCTIONALITY
+// =============================================================================
+
+let expandedChart = null;
+let currentExpandedChartData = null;
+
+// Initialize click handlers for chart expansion
+function initChartExpansion() {
+    // Overview tab charts
+    const chartConfigs = [
+        { canvasId: 'typeChart', chartKey: 'type', titleKey: 'analytics.gameTypes', titleFallback: 'Simples vs Duplas' },
+        { canvasId: 'evolutionChart', chartKey: 'evolution', titleKey: 'analytics.overallEvolution', titleFallback: 'Evolução Geral' },
+        { canvasId: 'streakChart', chartKey: 'streak', titleKey: 'analytics.streakHistory', titleFallback: 'Histórico de Sequências' },
+        { canvasId: 'dayOfWeekChart', chartKey: 'dayOfWeek', titleKey: 'analytics.gamesByDayOfWeek', titleFallback: 'Jogos por Dia da Semana' },
+        { canvasId: 'setBalanceChart', chartKey: 'setBalance', titleKey: 'analytics.setBalanceEvolution', titleFallback: 'Evolução do Saldo de Sets' },
+        { canvasId: 'frequencyChart', chartKey: 'frequency', titleKey: 'analytics.gamesFrequency', titleFallback: 'Frequência de Jogos' }
+    ];
+
+    chartConfigs.forEach(config => {
+        const canvas = document.getElementById(config.canvasId);
+        if (canvas) {
+            const wrapper = canvas.closest('.chart-wrapper');
+            if (wrapper) {
+                wrapper.addEventListener('click', () => {
+                    expandChart(config.chartKey, config.titleKey, config.titleFallback);
+                });
+            }
+        }
+    });
+}
+
+function expandChart(chartKey, titleKey, titleFallback) {
+    const sourceChart = charts[chartKey];
+    if (!sourceChart) return;
+
+    const modal = document.getElementById('expandedChartModal');
+    const titleEl = document.getElementById('expandedChartTitle');
+    const canvas = document.getElementById('expandedChart');
+
+    if (!modal || !canvas) return;
+
+    // Set title
+    titleEl.textContent = t(titleKey, titleFallback);
+
+    // Store config for recreation
+    currentExpandedChartData = {
+        type: sourceChart.config.type,
+        data: JSON.parse(JSON.stringify(sourceChart.config.data)),
+        options: JSON.parse(JSON.stringify(sourceChart.config.options || {}))
+    };
+
+    // Destroy existing expanded chart if any
+    if (expandedChart) {
+        expandedChart.destroy();
+        expandedChart = null;
+    }
+
+    // Show modal first
+    modal.style.display = 'flex';
+
+    // Create new chart with a slight delay to allow modal to render
+    setTimeout(() => {
+        const ctx = canvas.getContext('2d');
+
+        // Adjust options for larger display
+        const options = currentExpandedChartData.options;
+        options.maintainAspectRatio = false;
+        options.responsive = true;
+
+        // Increase font sizes for better readability
+        if (!options.plugins) options.plugins = {};
+        if (!options.plugins.legend) options.plugins.legend = {};
+        options.plugins.legend.labels = options.plugins.legend.labels || {};
+        options.plugins.legend.labels.font = { size: 14 };
+
+        expandedChart = new Chart(ctx, {
+            type: currentExpandedChartData.type,
+            data: currentExpandedChartData.data,
+            options: options
+        });
+    }, 100);
+}
+
+function closeExpandedChart() {
+    const modal = document.getElementById('expandedChartModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    if (expandedChart) {
+        expandedChart.destroy();
+        expandedChart = null;
+    }
+    currentExpandedChartData = null;
+}
+
+// Close expanded chart modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('expandedChartModal');
+    if (modal && e.target === modal) {
+        closeExpandedChart();
+    }
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('expandedChartModal');
+        if (modal && modal.style.display === 'flex') {
+            closeExpandedChart();
+        }
+    }
+});
+
+// Export function for global access
+window.closeExpandedChart = closeExpandedChart;

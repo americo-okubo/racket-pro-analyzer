@@ -665,6 +665,33 @@ header {
     max-width: 600px;
 }
 
+.modal-fullscreen {
+    max-width: 95vw;
+    width: 95vw;
+    height: 90vh;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-fullscreen .modal-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.expanded-chart-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.expanded-chart-body canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
 /* Desktop - centralize modals vertically */
 @media (min-width: 769px) {
     .modal {
@@ -831,6 +858,29 @@ header {
     background: var(--bg-color);
     border-radius: var(--radius-sm);
     padding: 16px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    position: relative;
+}
+
+.chart-wrapper:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.chart-wrapper::after {
+    content: '⛶';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    color: var(--text-light);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.chart-wrapper:hover::after {
+    opacity: 1;
 }
 
 .chart-wrapper h3 {
