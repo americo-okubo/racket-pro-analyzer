@@ -248,6 +248,8 @@
         "ratePct": "勝率 (%)",
         "cumulativeRate": "累積勝率 (%)",
         "movingAvg": "直近10試合 (%)",
+        "movingAvg10": "直近10試合 (%)",
+        "movingAvg30": "直近30試合 (%)",
         "gamesOnDay": "当日の試合数",
         "winsOnDay": "当日の勝利数",
         "performanceAnalysis": "パフォーマンス分析",

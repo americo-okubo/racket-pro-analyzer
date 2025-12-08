@@ -248,6 +248,8 @@
         "ratePct": "Taxa (%)",
         "cumulativeRate": "Taxa Acumulada (%)",
         "movingAvg": "Últimos 10 jogos (%)",
+        "movingAvg10": "Últimos 10 jogos (%)",
+        "movingAvg30": "Últimos 30 jogos (%)",
         "gamesOnDay": "Jogos no Dia",
         "winsOnDay": "Vitórias no Dia",
         "performanceAnalysis": "Análise de Desempenho",

@@ -2532,27 +2532,24 @@ function renderEvolutionChart() {
     const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
 
     const labels = [];
-    const cumulativeRates = [];
-    const movingAvgRates = [];
+    const movingAvg10 = [];
+    const movingAvg30 = [];
     const pointColors = [];
-
-    let cumulativeWins = 0;
-    const movingWindowSize = 10;
 
     sortedGames.forEach((game, index) => {
         const isWin = game.result === 'win';
-        if (isWin) cumulativeWins++;
 
-        // Cumulative win rate
-        const cumulativeRate = Math.round((cumulativeWins / (index + 1)) * 100);
-        cumulativeRates.push(cumulativeRate);
+        // Moving average - last 10 games
+        const start10 = Math.max(0, index + 1 - 10);
+        const window10 = sortedGames.slice(start10, index + 1);
+        const wins10 = window10.filter(g => g.result === 'win').length;
+        movingAvg10.push(Math.round((wins10 / window10.length) * 100));
 
-        // Moving average (last N games)
-        const startIdx = Math.max(0, index + 1 - movingWindowSize);
-        const windowGames = sortedGames.slice(startIdx, index + 1);
-        const windowWins = windowGames.filter(g => g.result === 'win').length;
-        const movingAvg = Math.round((windowWins / windowGames.length) * 100);
-        movingAvgRates.push(movingAvg);
+        // Moving average - last 30 games
+        const start30 = Math.max(0, index + 1 - 30);
+        const window30 = sortedGames.slice(start30, index + 1);
+        const wins30 = window30.filter(g => g.result === 'win').length;
+        movingAvg30.push(Math.round((wins30 / window30.length) * 100));
 
         // Point color based on game result
         pointColors.push(isWin ? '#27ae60' : '#e74c3c');
@@ -2566,28 +2563,28 @@ function renderEvolutionChart() {
             labels,
             datasets: [
                 {
-                    label: t('analytics.cumulativeRate', 'Taxa Acumulada (%)'),
-                    data: cumulativeRates,
+                    label: t('analytics.movingAvg10', 'Últimos 10 jogos (%)'),
+                    data: movingAvg10,
+                    borderColor: '#3498db',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    pointRadius: 5,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointBorderWidth: 2,
+                    order: 0
+                },
+                {
+                    label: t('analytics.movingAvg30', 'Últimos 30 jogos (%)'),
+                    data: movingAvg30,
                     borderColor: '#9b59b6',
                     backgroundColor: 'rgba(155, 89, 182, 0.1)',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 6,
-                    pointBackgroundColor: pointColors,
-                    pointBorderColor: pointColors,
-                    pointBorderWidth: 2,
-                    order: 1
-                },
-                {
-                    label: t('analytics.movingAvg', 'Últimos 10 jogos (%)'),
-                    data: movingAvgRates,
-                    borderColor: '#3498db',
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    tension: 0.3,
                     pointRadius: 0,
-                    order: 0
+                    order: 1
                 }
             ]
         },
