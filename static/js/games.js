@@ -2591,7 +2591,7 @@ function renderDayOfWeekChart() {
     });
 }
 
-// Set Balance Evolution Chart - cumulative set balance over time
+// Set Statistics Chart - shows sets won/lost by month with win rate line
 function renderSetBalanceChart() {
     const ctx = document.getElementById('setBalanceChart');
     if (!ctx) return;
@@ -2600,10 +2600,10 @@ function renderSetBalanceChart() {
 
     if (filteredGames.length === 0) {
         charts.setBalance = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: [t('common.noData', 'Sem dados')],
-                datasets: [{ label: t('analytics.cumulativeBalance', 'Saldo Acumulado'), data: [0], borderColor: '#9b59b6' }]
+                datasets: [{ label: t('analytics.setsWon', 'Sets Ganhos'), data: [0], backgroundColor: '#27ae60' }]
             },
             options: { responsive: true }
         });
@@ -2613,67 +2613,107 @@ function renderSetBalanceChart() {
     // Sort games by date
     const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
 
-    // Calculate cumulative set balance
-    let cumulativeBalance = 0;
-    const labels = [];
-    const balanceData = [];
+    // Group by month (YYYY-MM)
+    const monthStats = {};
 
     sortedGames.forEach(game => {
-        // Calculate set balance from score using parseScore helper
-        // Score format: "2-1 (6-4, 4-6, 6-3)" where 2-1 is the set count
-        const scoreData = parseScore(game.score);
-        let gameBalance = scoreData.balance;
+        const monthKey = game.game_date.substring(0, 7); // YYYY-MM
 
-        // If no score, use result as approximation (win = +1, loss = -1)
-        if (!game.score) {
-            gameBalance = game.result === 'win' ? 1 : -1;
+        if (!monthStats[monthKey]) {
+            monthStats[monthKey] = { setsWon: 0, setsLost: 0 };
         }
 
-        cumulativeBalance += gameBalance;
-        labels.push(formatDateLabel(game.game_date));
-        balanceData.push(cumulativeBalance);
+        // Calculate sets from score using parseScore helper
+        const scoreData = parseScore(game.score);
+
+        // If no score data, estimate based on result
+        if (!game.score || (scoreData.setsWon === 0 && scoreData.setsLost === 0)) {
+            // Estimate: win = 2-0 or 2-1, loss = 0-2 or 1-2
+            if (game.result === 'win') {
+                monthStats[monthKey].setsWon += 2;
+                monthStats[monthKey].setsLost += Math.random() < 0.6 ? 0 : 1;
+            } else {
+                monthStats[monthKey].setsLost += 2;
+                monthStats[monthKey].setsWon += Math.random() < 0.6 ? 0 : 1;
+            }
+        } else {
+            monthStats[monthKey].setsWon += scoreData.setsWon;
+            monthStats[monthKey].setsLost += scoreData.setsLost;
+        }
     });
 
-    // Create gradient
-    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(39, 174, 96, 0.3)');
-    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
-    gradient.addColorStop(1, 'rgba(231, 76, 60, 0.3)');
+    // Convert to arrays sorted by month
+    const sortedMonths = Object.keys(monthStats).sort();
+    const labels = sortedMonths.map(m => {
+        const [year, month] = m.split('-');
+        return `${month}/${year.slice(-2)}`;
+    });
+    const setsWonData = sortedMonths.map(m => monthStats[m].setsWon);
+    const setsLostData = sortedMonths.map(m => monthStats[m].setsLost);
+    const winRateData = sortedMonths.map(m => {
+        const total = monthStats[m].setsWon + monthStats[m].setsLost;
+        return total > 0 ? Math.round((monthStats[m].setsWon / total) * 100) : 0;
+    });
 
     charts.setBalance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels,
-            datasets: [{
-                label: t('analytics.cumulativeBalance', 'Saldo Acumulado'),
-                data: balanceData,
-                borderColor: '#9b59b6',
-                backgroundColor: gradient,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 4,
-                pointBackgroundColor: balanceData.map(v => v >= 0 ? '#27ae60' : '#e74c3c')
-            }]
+            datasets: [
+                {
+                    label: t('analytics.setsWon', 'Sets Ganhos'),
+                    data: setsWonData,
+                    backgroundColor: '#27ae60',
+                    yAxisID: 'y'
+                },
+                {
+                    label: t('analytics.setsLost', 'Sets Perdidos'),
+                    data: setsLostData,
+                    backgroundColor: '#e74c3c',
+                    yAxisID: 'y'
+                },
+                {
+                    label: t('analytics.setWinRate', 'Taxa Sets (%)'),
+                    data: winRateData,
+                    type: 'line',
+                    borderColor: '#9b59b6',
+                    backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#9b59b6',
+                    yAxisID: 'y1'
+                }
+            ]
         },
         options: {
             responsive: true,
             scales: {
                 y: {
-                    title: { display: true, text: t('analytics.cumulativeBalance', 'Saldo') },
-                    ticks: {
-                        callback: function(value) {
-                            return value > 0 ? `+${value}` : value;
-                        }
-                    }
+                    beginAtZero: true,
+                    position: 'left',
+                    title: { display: true, text: t('analytics.sets', 'Sets') },
+                    ticks: { stepSize: 1 }
                 },
-                x: { title: { display: true, text: t('analytics.date', 'Data') } }
+                y1: {
+                    beginAtZero: true,
+                    max: 100,
+                    position: 'right',
+                    title: { display: true, text: t('analytics.ratePct', 'Taxa (%)') },
+                    grid: { drawOnChartArea: false }
+                },
+                x: { title: { display: true, text: t('analytics.month', 'Mês') } }
             },
             plugins: {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
+                            const label = context.dataset.label || '';
                             const value = context.raw;
-                            return `${t('analytics.cumulativeBalance', 'Saldo')}: ${value > 0 ? '+' : ''}${value}`;
+                            if (context.datasetIndex === 2) {
+                                return `${label}: ${value}%`;
+                            }
+                            return `${label}: ${value}`;
                         }
                     }
                 }
@@ -2874,7 +2914,7 @@ function initChartExpansion() {
         { canvasId: 'evolutionChart', chartKey: 'evolution', titleKey: 'analytics.overallEvolution', titleFallback: 'Evolução Geral' },
         { canvasId: 'streakChart', chartKey: 'streak', titleKey: 'analytics.streakHistory', titleFallback: 'Histórico de Sequências' },
         { canvasId: 'dayOfWeekChart', chartKey: 'dayOfWeek', titleKey: 'analytics.gamesByDayOfWeek', titleFallback: 'Jogos por Dia da Semana' },
-        { canvasId: 'setBalanceChart', chartKey: 'setBalance', titleKey: 'analytics.setBalanceEvolution', titleFallback: 'Evolução do Saldo de Sets' },
+        { canvasId: 'setBalanceChart', chartKey: 'setBalance', titleKey: 'analytics.setsPerMonth', titleFallback: 'Sets por Mês' },
         { canvasId: 'frequencyChart', chartKey: 'frequency', titleKey: 'analytics.gamesFrequency', titleFallback: 'Frequência de Jogos' }
     ];
 
