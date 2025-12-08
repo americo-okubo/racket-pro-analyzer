@@ -2528,108 +2528,65 @@ function renderEvolutionChart() {
         return;
     }
 
-    // Group games by date
-    const dateStats = {};
-    filteredGames.forEach(game => {
-        const date = game.game_date;
-        if (!dateStats[date]) {
-            dateStats[date] = { wins: 0, total: 0 };
-        }
-        dateStats[date].total++;
-        if (game.result === 'win') dateStats[date].wins++;
-    });
+    // Sort all games by date
+    const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
 
-    const sortedDates = Object.keys(dateStats).sort();
-    let cumulativeWins = 0;
-    let cumulativeTotal = 0;
     const labels = [];
     const cumulativeRates = [];
-    const gamesPerDay = [];
-    const winsPerDay = [];
     const movingAvgRates = [];
+    const pointColors = [];
 
-    // For moving average calculation (last N games)
+    let cumulativeWins = 0;
     const movingWindowSize = 10;
-    const recentResults = [];
 
-    sortedDates.forEach(date => {
-        const dayWins = dateStats[date].wins;
-        const dayTotal = dateStats[date].total;
+    sortedGames.forEach((game, index) => {
+        const isWin = game.result === 'win';
+        if (isWin) cumulativeWins++;
 
-        cumulativeWins += dayWins;
-        cumulativeTotal += dayTotal;
-
-        // Add results to moving window
-        for (let i = 0; i < dayTotal; i++) {
-            if (i < dayWins) {
-                recentResults.push(1);
-            } else {
-                recentResults.push(0);
-            }
-        }
-
-        // Calculate moving average (last N games)
-        const windowResults = recentResults.slice(-movingWindowSize);
-        const movingAvg = windowResults.length > 0
-            ? Math.round((windowResults.reduce((a, b) => a + b, 0) / windowResults.length) * 100)
-            : 0;
-
-        const cumulativeRate = Math.round((cumulativeWins / cumulativeTotal) * 100);
-
+        // Cumulative win rate
+        const cumulativeRate = Math.round((cumulativeWins / (index + 1)) * 100);
         cumulativeRates.push(cumulativeRate);
-        gamesPerDay.push(dayTotal);
-        winsPerDay.push(dayWins);
+
+        // Moving average (last N games)
+        const startIdx = Math.max(0, index + 1 - movingWindowSize);
+        const windowGames = sortedGames.slice(startIdx, index + 1);
+        const windowWins = windowGames.filter(g => g.result === 'win').length;
+        const movingAvg = Math.round((windowWins / windowGames.length) * 100);
         movingAvgRates.push(movingAvg);
-        labels.push(formatDateLabel(date));
+
+        // Point color based on game result
+        pointColors.push(isWin ? '#27ae60' : '#e74c3c');
+
+        labels.push(formatDateLabel(game.game_date));
     });
 
     charts.evolution = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels,
             datasets: [
                 {
-                    label: t('analytics.gamesOnDay', 'Jogos no Dia'),
-                    data: gamesPerDay,
-                    backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                    borderColor: '#3498db',
-                    borderWidth: 1,
-                    yAxisID: 'y',
-                    order: 3
-                },
-                {
-                    label: t('analytics.winsOnDay', 'Vitórias no Dia'),
-                    data: winsPerDay,
-                    backgroundColor: 'rgba(39, 174, 96, 0.7)',
-                    borderColor: '#27ae60',
-                    borderWidth: 1,
-                    yAxisID: 'y',
-                    order: 2
-                },
-                {
                     label: t('analytics.cumulativeRate', 'Taxa Acumulada (%)'),
                     data: cumulativeRates,
-                    type: 'line',
                     borderColor: '#9b59b6',
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'rgba(155, 89, 182, 0.1)',
                     borderWidth: 2,
+                    fill: true,
                     tension: 0.3,
-                    pointRadius: 2,
-                    pointBackgroundColor: '#9b59b6',
-                    yAxisID: 'y1',
+                    pointRadius: 6,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointBorderWidth: 2,
                     order: 1
                 },
                 {
                     label: t('analytics.movingAvg', 'Últimos 10 jogos (%)'),
                     data: movingAvgRates,
-                    type: 'line',
-                    borderColor: '#e74c3c',
+                    borderColor: '#3498db',
                     backgroundColor: 'transparent',
                     borderWidth: 2,
-                    borderDash: [5, 5],
                     tension: 0.3,
                     pointRadius: 0,
-                    yAxisID: 'y1',
                     order: 0
                 }
             ]
@@ -2643,16 +2600,8 @@ function renderEvolutionChart() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    position: 'left',
-                    title: { display: true, text: t('stats.totalGames', 'Jogos') },
-                    ticks: { stepSize: 1 }
-                },
-                y1: {
-                    beginAtZero: true,
                     max: 100,
-                    position: 'right',
-                    title: { display: true, text: t('analytics.ratePct', 'Taxa (%)') },
-                    grid: { drawOnChartArea: false }
+                    title: { display: true, text: t('analytics.ratePct', 'Taxa (%)') }
                 },
                 x: { title: { display: true, text: t('analytics.date', 'Data') } }
             },
@@ -2662,10 +2611,13 @@ function renderEvolutionChart() {
                         label: function(context) {
                             const label = context.dataset.label || '';
                             const value = context.raw;
-                            if (context.datasetIndex >= 2) {
-                                return `${label}: ${value}%`;
+                            if (context.datasetIndex === 0) {
+                                const gameIndex = context.dataIndex;
+                                const isWin = sortedGames[gameIndex]?.result === 'win';
+                                const resultText = isWin ? t('stats.win', 'Vitória') : t('stats.loss', 'Derrota');
+                                return [`${label}: ${value}%`, resultText];
                             }
-                            return `${label}: ${value}`;
+                            return `${label}: ${value}%`;
                         }
                     }
                 }
