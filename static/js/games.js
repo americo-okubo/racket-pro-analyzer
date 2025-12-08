@@ -2717,7 +2717,8 @@ function renderDayOfWeekChart() {
                     label: t('stats.totalGames', 'Total de Jogos'),
                     data: totals,
                     backgroundColor: '#3498db',
-                    yAxisID: 'y'
+                    yAxisID: 'y',
+                    order: 2
                 },
                 {
                     label: t('analytics.winRatePct', 'Taxa de Vitória (%)'),
@@ -2727,7 +2728,8 @@ function renderDayOfWeekChart() {
                     backgroundColor: 'rgba(39, 174, 96, 0.1)',
                     fill: false,
                     tension: 0.3,
-                    yAxisID: 'y1'
+                    yAxisID: 'y1',
+                    order: 1
                 }
             ]
         },
@@ -2958,7 +2960,15 @@ function renderFrequencyChart() {
                 y: {
                     beginAtZero: true,
                     title: { display: true, text: t('stats.totalGames', 'Jogos') },
-                    ticks: { stepSize: 1 }
+                    ticks: { stepSize: 1 },
+                    afterBuildTicks: function(scale) {
+                        // Add average value to ticks if not already present
+                        const avgVal = parseFloat(avgGames.toFixed(1));
+                        if (!scale.ticks.some(tick => Math.abs(tick.value - avgVal) < 0.1)) {
+                            scale.ticks.push({ value: avgVal });
+                            scale.ticks.sort((a, b) => a.value - b.value);
+                        }
+                    }
                 },
                 x: { title: { display: true, text: t('analytics.week', 'Semana') } }
             },
@@ -2970,6 +2980,18 @@ function renderFrequencyChart() {
                                 return `${t('analytics.average', 'Média')}: ${context.raw}`;
                             }
                             return `${context.raw} ${context.raw === 1 ? t('analytics.game', 'jogo') : t('analytics.games', 'jogos')}`;
+                        }
+                    }
+                },
+                legend: {
+                    labels: {
+                        generateLabels: function(chart) {
+                            const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            // Update average label to show the value
+                            if (original[1]) {
+                                original[1].text = `${t('analytics.average', 'Média')}: ${avgGames.toFixed(1)}`;
+                            }
+                            return original;
                         }
                     }
                 }

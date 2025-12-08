@@ -58,30 +58,16 @@
 
     <!-- Main Content -->
     <main class="container">
-        <!-- Statistics Section -->
-        <section class="stats-section">
-            <h2 data-i18n="games.stats">📈 Estatísticas</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">🏆</div>
-                    <div class="stat-value" id="totalWins">0</div>
-                    <div class="stat-label" data-i18n="stats.wins">Vitórias</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">❌</div>
-                    <div class="stat-value" id="totalLosses">0</div>
-                    <div class="stat-label" data-i18n="stats.losses">Derrotas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-value" id="winRate">0%</div>
-                    <div class="stat-label" data-i18n="stats.winRate">Taxa de Vitória</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-value" id="totalPlayers">0</div>
-                    <div class="stat-label" data-i18n="stats.players">Jogadores</div>
-                </div>
+        <!-- Statistics Section - Compact -->
+        <section class="stats-section stats-compact">
+            <div class="stats-inline">
+                <span class="stat-inline"><span class="stat-icon-inline">🏆</span> <span id="totalWins">0</span> <span class="stat-label-inline" data-i18n="stats.wins">Vitórias</span></span>
+                <span class="stat-separator">|</span>
+                <span class="stat-inline"><span class="stat-icon-inline">❌</span> <span id="totalLosses">0</span> <span class="stat-label-inline" data-i18n="stats.losses">Derrotas</span></span>
+                <span class="stat-separator">|</span>
+                <span class="stat-inline"><span class="stat-icon-inline">📊</span> <span id="winRate">0%</span> <span class="stat-label-inline" data-i18n="stats.winRate">Taxa de Vitória</span></span>
+                <span class="stat-separator">|</span>
+                <span class="stat-inline"><span class="stat-icon-inline">👥</span> <span id="totalPlayers">0</span> <span class="stat-label-inline" data-i18n="stats.players">Jogadores</span></span>
             </div>
         </section>
 
@@ -89,7 +75,7 @@
         <section class="actions-section">
             <button onclick="openNewGameModal()" class="btn-primary" data-i18n="games.newGame">➕ Novo Jogo</button>
             <button onclick="openVoiceGameModal()" class="btn-voice-game" data-i18n="voice.btnStartVoice">🎤 Registrar por Voz</button>
-            <button onclick="openPlayersModal()" class="btn-secondary" data-i18n="games.players">👥 Jogadores</button>
+            <button onclick="openPlayersModal()" class="btn-players" data-i18n="games.players">👥 Jogadores</button>
         </section>
 
         <!-- Games List Section -->
