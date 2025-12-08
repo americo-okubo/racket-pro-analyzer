@@ -118,30 +118,16 @@
             </div>
         </section>
 
-        <!-- Overall Statistics (logged in) -->
-        <section id="overallStats" class="stats-section" style="display: none;">
-            <h2 data-i18n="home.overallStats">📊 Estatísticas Gerais</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">🎮</div>
-                    <div class="stat-value" id="totalGames">0</div>
-                    <div class="stat-label" data-i18n="stats.totalGames">Total de Jogos</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🏆</div>
-                    <div class="stat-value" id="totalWins">0</div>
-                    <div class="stat-label" data-i18n="stats.wins">Vitórias</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-value" id="winRate">0%</div>
-                    <div class="stat-label" data-i18n="stats.winRate">Taxa de Vitória</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🏸</div>
-                    <div class="stat-value" id="sportsCount">0</div>
-                    <div class="stat-label" data-i18n="stats.sportsPlayed">Esportes</div>
-                </div>
+        <!-- Overall Statistics (logged in) - Compact -->
+        <section id="overallStats" class="stats-section stats-compact" style="display: none;">
+            <div class="stats-inline">
+                <span class="stat-inline"><span class="stat-icon-inline">🎮</span> <span id="totalGames">0</span> <span class="stat-label-inline" data-i18n="stats.totalGames">Total de Jogos</span></span>
+                <span class="stat-separator">|</span>
+                <span class="stat-inline"><span class="stat-icon-inline">🏆</span> <span id="totalWins">0</span> <span class="stat-label-inline" data-i18n="stats.wins">Vitórias</span></span>
+                <span class="stat-separator">|</span>
+                <span class="stat-inline"><span class="stat-icon-inline">📊</span> <span id="winRate">0%</span> <span class="stat-label-inline" data-i18n="stats.winRate">Taxa de Vitória</span></span>
+                <span class="stat-separator">|</span>
+                <span class="stat-inline"><span class="stat-icon-inline">🏸</span> <span id="sportsCount">0</span> <span class="stat-label-inline" data-i18n="stats.sportsPlayed">Esportes</span></span>
             </div>
         </section>
     </main>
