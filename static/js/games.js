@@ -3222,63 +3222,84 @@ function generateEvolutionChartAnalysis() {
     const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
     const totalGames = sortedGames.length;
     const totalWins = filteredGames.filter(g => g.result === 'win').length;
-    const currentWinRate = Math.round((totalWins / totalGames) * 100);
+    const overallRate = Math.round((totalWins / totalGames) * 100);
 
-    // First vs last 20 games comparison
-    const firstGames = sortedGames.slice(0, Math.min(20, Math.floor(totalGames / 2)));
-    const lastGames = sortedGames.slice(-Math.min(20, Math.floor(totalGames / 2)));
+    // Calculate last 10 and last 30 games rates
+    const last10Games = sortedGames.slice(-Math.min(10, totalGames));
+    const last30Games = sortedGames.slice(-Math.min(30, totalGames));
 
-    const firstRate = Math.round((firstGames.filter(g => g.result === 'win').length / firstGames.length) * 100);
-    const lastRate = Math.round((lastGames.filter(g => g.result === 'win').length / lastGames.length) * 100);
-    const trend = lastRate - firstRate;
+    const last10Wins = last10Games.filter(g => g.result === 'win').length;
+    const last30Wins = last30Games.filter(g => g.result === 'win').length;
 
-    // Find best and worst periods (by month)
-    const monthStats = {};
-    sortedGames.forEach(game => {
-        const month = game.game_date.substring(0, 7);
-        if (!monthStats[month]) monthStats[month] = { wins: 0, total: 0 };
-        monthStats[month].total++;
-        if (game.result === 'win') monthStats[month].wins++;
-    });
+    const rate10 = Math.round((last10Wins / last10Games.length) * 100);
+    const rate30 = Math.round((last30Wins / last30Games.length) * 100);
 
-    let bestMonth = null, worstMonth = null;
-    let bestRate = -1, worstRate = 101;
-    Object.entries(monthStats).forEach(([month, stats]) => {
-        if (stats.total >= 5) {
-            const rate = (stats.wins / stats.total) * 100;
-            if (rate > bestRate) { bestRate = rate; bestMonth = month; }
-            if (rate < worstRate) { worstRate = rate; worstMonth = month; }
+    // Trend: compare short-term (10) vs medium-term (30)
+    const trendDiff = rate10 - rate30;
+
+    // Recent streak
+    let recentStreak = 0;
+    let streakType = null;
+    for (let i = sortedGames.length - 1; i >= 0; i--) {
+        const isWin = sortedGames[i].result === 'win';
+        if (streakType === null) {
+            streakType = isWin ? 'win' : 'loss';
+            recentStreak = 1;
+        } else if ((isWin && streakType === 'win') || (!isWin && streakType === 'loss')) {
+            recentStreak++;
+        } else {
+            break;
         }
-    });
+    }
 
     let parts = [];
+
+    // Current form based on moving averages
     if (isPt) {
-        parts.push(`<strong>Taxa geral:</strong> <span class="analysis-highlight">${currentWinRate}%</span> (${totalWins}V/${totalGames - totalWins}D em ${totalGames} jogos)`);
+        parts.push(`<strong>Últimos 10 jogos:</strong> <span class="analysis-highlight">${rate10}%</span> (${last10Wins}V/${last10Games.length - last10Wins}D)`);
+        if (totalGames >= 30) {
+            parts.push(`<strong>Últimos 30 jogos:</strong> <span class="analysis-highlight">${rate30}%</span> (${last30Wins}V/${last30Games.length - last30Wins}D)`);
+        }
     } else if (isJa) {
-        parts.push(`<strong>総合勝率:</strong> <span class="analysis-highlight">${currentWinRate}%</span> (${totalWins}勝/${totalGames - totalWins}敗、${totalGames}試合)`);
+        parts.push(`<strong>直近10試合:</strong> <span class="analysis-highlight">${rate10}%</span> (${last10Wins}勝/${last10Games.length - last10Wins}敗)`);
+        if (totalGames >= 30) {
+            parts.push(`<strong>直近30試合:</strong> <span class="analysis-highlight">${rate30}%</span> (${last30Wins}勝/${last30Games.length - last30Wins}敗)`);
+        }
     } else {
-        parts.push(`<strong>Overall rate:</strong> <span class="analysis-highlight">${currentWinRate}%</span> (${totalWins}W/${totalGames - totalWins}L in ${totalGames} games)`);
+        parts.push(`<strong>Last 10 games:</strong> <span class="analysis-highlight">${rate10}%</span> (${last10Wins}W/${last10Games.length - last10Wins}L)`);
+        if (totalGames >= 30) {
+            parts.push(`<strong>Last 30 games:</strong> <span class="analysis-highlight">${rate30}%</span> (${last30Wins}W/${last30Games.length - last30Wins}L)`);
+        }
     }
 
-    if (trend > 5) {
-        if (isPt) parts.push(`<span class="analysis-positive">↑ Melhorando ${trend}%</span> (primeiros ${firstGames.length}: ${firstRate}% → últimos ${lastGames.length}: ${lastRate}%)`);
-        else if (isJa) parts.push(`<span class="analysis-positive">↑ ${trend}%上昇中</span> (最初${firstGames.length}試合: ${firstRate}% → 最近${lastGames.length}試合: ${lastRate}%)`);
-        else parts.push(`<span class="analysis-positive">↑ Improving ${trend}%</span> (first ${firstGames.length}: ${firstRate}% → last ${lastGames.length}: ${lastRate}%)`);
-    } else if (trend < -5) {
-        if (isPt) parts.push(`<span class="analysis-negative">↓ Queda de ${Math.abs(trend)}%</span> (primeiros ${firstGames.length}: ${firstRate}% → últimos ${lastGames.length}: ${lastRate}%)`);
-        else if (isJa) parts.push(`<span class="analysis-negative">↓ ${Math.abs(trend)}%下降中</span> (最初${firstGames.length}試合: ${firstRate}% → 最近${lastGames.length}試合: ${lastRate}%)`);
-        else parts.push(`<span class="analysis-negative">↓ Declining ${Math.abs(trend)}%</span> (first ${firstGames.length}: ${firstRate}% → last ${lastGames.length}: ${lastRate}%)`);
-    } else {
-        if (isPt) parts.push(`Desempenho <span class="analysis-highlight">estável</span> ao longo do período`);
-        else if (isJa) parts.push(`パフォーマンスは<span class="analysis-highlight">安定</span>`);
-        else parts.push(`Performance <span class="analysis-highlight">stable</span> over time`);
+    // Trend analysis
+    if (totalGames >= 30) {
+        if (trendDiff > 10) {
+            if (isPt) parts.push(`<span class="analysis-positive">↑ Em alta!</span> Curto prazo ${trendDiff}% acima do médio prazo`);
+            else if (isJa) parts.push(`<span class="analysis-positive">↑ 好調！</span> 短期が中期より${trendDiff}%上`);
+            else parts.push(`<span class="analysis-positive">↑ Hot streak!</span> Short-term ${trendDiff}% above medium-term`);
+        } else if (trendDiff < -10) {
+            if (isPt) parts.push(`<span class="analysis-negative">↓ Em baixa</span> Curto prazo ${Math.abs(trendDiff)}% abaixo do médio prazo`);
+            else if (isJa) parts.push(`<span class="analysis-negative">↓ 不調</span> 短期が中期より${Math.abs(trendDiff)}%下`);
+            else parts.push(`<span class="analysis-negative">↓ Cold streak</span> Short-term ${Math.abs(trendDiff)}% below medium-term`);
+        } else {
+            if (isPt) parts.push(`<span class="analysis-highlight">→ Estável</span> Tendência constante`);
+            else if (isJa) parts.push(`<span class="analysis-highlight">→ 安定</span> 一定のパフォーマンス`);
+            else parts.push(`<span class="analysis-highlight">→ Stable</span> Consistent performance`);
+        }
     }
 
-    if (bestMonth && worstMonth && bestMonth !== worstMonth) {
-        const formatMonth = (m) => { const [y, mo] = m.split('-'); return `${mo}/${y.slice(-2)}`; };
-        if (isPt) parts.push(`Melhor mês: ${formatMonth(bestMonth)} (${Math.round(bestRate)}%) | Pior: ${formatMonth(worstMonth)} (${Math.round(worstRate)}%)`);
-        else if (isJa) parts.push(`ベスト月: ${formatMonth(bestMonth)} (${Math.round(bestRate)}%) | ワースト: ${formatMonth(worstMonth)} (${Math.round(worstRate)}%)`);
-        else parts.push(`Best month: ${formatMonth(bestMonth)} (${Math.round(bestRate)}%) | Worst: ${formatMonth(worstMonth)} (${Math.round(worstRate)}%)`);
+    // Current streak
+    if (recentStreak >= 3) {
+        if (streakType === 'win') {
+            if (isPt) parts.push(`🔥 <span class="analysis-positive">${recentStreak} vitórias seguidas!</span>`);
+            else if (isJa) parts.push(`🔥 <span class="analysis-positive">${recentStreak}連勝中！</span>`);
+            else parts.push(`🔥 <span class="analysis-positive">${recentStreak} wins in a row!</span>`);
+        } else {
+            if (isPt) parts.push(`⚠️ <span class="analysis-negative">${recentStreak} derrotas seguidas</span>`);
+            else if (isJa) parts.push(`⚠️ <span class="analysis-negative">${recentStreak}連敗中</span>`);
+            else parts.push(`⚠️ <span class="analysis-negative">${recentStreak} losses in a row</span>`);
+        }
     }
 
     el.innerHTML = parts.join('<br>');
