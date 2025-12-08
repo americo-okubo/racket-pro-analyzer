@@ -124,7 +124,11 @@
         "lossResult": "DERROTA",
         "drawResult": "EMPATE",
         "selectPartnerAndOpponents": "Por favor, selecione o parceiro e os dois adversários",
-        "selectOpponentRequired": "Por favor, selecione o adversário"
+        "selectOpponentRequired": "Por favor, selecione o adversário",
+        "gameDetails": "Detalhes do Jogo",
+        "viewDetails": "Ver detalhes",
+        "edit": "Editar",
+        "delete": "Excluir"
     },
     "players": {
         "title": "👥 Jogadores",
@@ -176,6 +180,7 @@
         "stable": "Estável",
         "setBalance": "Saldo de Sets",
         "viewFullHistory": "Ver histórico completo",
+        "h2hVs": "Histórico vs",
         "you": "Você",
         "youPlural": "Vocês",
         "opponents": "Adversários",

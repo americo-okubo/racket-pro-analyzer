@@ -636,7 +636,7 @@ function renderGamesList() {
                     ${resultText}
                 </div>
                 <div class="game-actions">
-                    <button onclick="viewGameDetails(${game.id})" class="btn-view-small" title="${t('games.viewDetails', 'Ver detalhes')}">👁️</button>
+                    <button onclick="viewGameDetails(${game.id})" class="btn-view-small" title="${t('games.viewDetails', 'Ver detalhes')}">🔍</button>
                     <button onclick="editGame(${game.id})" class="btn-edit-small" title="${t('games.edit', 'Editar')}">✏️</button>
                     <button onclick="deleteGame(${game.id})" class="btn-danger-small" title="${t('games.delete', 'Excluir')}">🗑️</button>
                 </div>
@@ -712,7 +712,7 @@ function viewGameDetails(gameId) {
         modal.innerHTML = `
             <div class="modal-content modal-small">
                 <div class="modal-header">
-                    <h2 id="gameDetailsTitle">${t('games.gameDetails', 'Detalhes do Jogo')}</h2>
+                    <h2 id="gameDetailsTitle"></h2>
                     <button onclick="closeModal('gameDetailsModal')" class="close-btn">&times;</button>
                 </div>
                 <div class="modal-body" id="gameDetailsBody"></div>
@@ -721,6 +721,7 @@ function viewGameDetails(gameId) {
         document.body.appendChild(modal);
     }
 
+    document.getElementById('gameDetailsTitle').textContent = t('games.gameDetails', 'Detalhes do Jogo');
     document.getElementById('gameDetailsBody').innerHTML = content;
     modal.style.display = 'flex';
 }
@@ -1262,9 +1263,18 @@ function populateAnalyticsSelects() {
 
 // Helper function to format date as DD/MM/YY (with year for clarity)
 function formatDateLabel(dateStr) {
-    const parts = dateStr.split('-');
-    const year = parts[0].slice(-2); // Last 2 digits of year
-    return `${parts[2]}/${parts[1]}/${year}`;
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
+    const date = new Date(dateStr + 'T00:00:00');
+
+    if (lang.startsWith('ja')) {
+        // Japanese format: YYYY/MM/DD
+        return date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
+    } else if (lang.startsWith('en')) {
+        // English format: MM/DD/YY
+        return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+    }
+    // Portuguese format: DD/MM/YY
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 
 // Helper function to parse score and get set balance
@@ -3242,7 +3252,17 @@ document.addEventListener('click', (e) => {
 // =============================================================================
 
 function formatDate(dateStr) {
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const date = new Date(dateStr + 'T00:00:00');
+
+    if (lang.startsWith('ja')) {
+        // Japanese format: YYYY/MM/DD
+        return date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
+    } else if (lang.startsWith('en')) {
+        // English format: MM/DD/YY
+        return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+    }
+    // Portuguese format: DD/MM/YY
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
 

@@ -124,7 +124,11 @@
         "lossResult": "LOSS",
         "drawResult": "DRAW",
         "selectPartnerAndOpponents": "Please select the partner and both opponents",
-        "selectOpponentRequired": "Please select the opponent"
+        "selectOpponentRequired": "Please select the opponent",
+        "gameDetails": "Game Details",
+        "viewDetails": "View details",
+        "edit": "Edit",
+        "delete": "Delete"
     },
     "players": {
         "title": "👥 Players",
@@ -176,6 +180,7 @@
         "stable": "Stable",
         "setBalance": "Set Balance",
         "viewFullHistory": "View full history",
+        "h2hVs": "History vs",
         "you": "You",
         "youPlural": "Your team",
         "opponents": "Opponents",
