@@ -2921,7 +2921,7 @@ function generateTypeChartAnalysis() {
     const el = document.getElementById('typeChartAnalysis');
     if (!el) return;
 
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
@@ -2984,7 +2984,7 @@ function generateEvolutionChartAnalysis() {
     const el = document.getElementById('evolutionChartAnalysis');
     if (!el) return;
 
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
@@ -3062,7 +3062,7 @@ function generateStreakChartAnalysis() {
     const el = document.getElementById('streakChartAnalysis');
     if (!el) return;
 
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
@@ -3157,7 +3157,7 @@ function generateDayOfWeekChartAnalysis() {
     const el = document.getElementById('dayOfWeekChartAnalysis');
     if (!el) return;
 
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
@@ -3233,7 +3233,7 @@ function generateSetBalanceChartAnalysis() {
     const el = document.getElementById('setBalanceChartAnalysis');
     if (!el) return;
 
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
@@ -3322,7 +3322,7 @@ function generateFrequencyChartAnalysis() {
     const el = document.getElementById('frequencyChartAnalysis');
     if (!el) return;
 
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
@@ -3486,7 +3486,7 @@ function analyzePerformance() {
     const winRate = Math.round((wins / totalGames) * 100);
 
     // Language detection for text
-    const lang = currentLanguage || 'pt-BR';
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
     const isPt = lang.startsWith('pt');
     const isJa = lang.startsWith('ja');
 
