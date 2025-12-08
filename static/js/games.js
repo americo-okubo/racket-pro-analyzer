@@ -370,7 +370,7 @@ function renderPlayersList() {
                 </p>
             </div>
             <div class="player-actions">
-                <button onclick="openPlayerProfile(${player.id})" class="btn-profile-small" title="${t('players.viewProfile', 'Ver Perfil')}">👤</button>
+                <button onclick="openPlayerProfile(${player.id})" class="btn-profile-small" title="${t('players.viewProfile', 'Ver Perfil')}">📊</button>
                 <button onclick="editPlayer(${player.id})" class="btn-edit-small" title="${t('common.edit', 'Editar')}">✏️</button>
                 <button onclick="deletePlayer(${player.id})" class="btn-danger-small" title="${t('common.delete', 'Excluir')}">🗑️</button>
             </div>
