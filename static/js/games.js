@@ -2921,10 +2921,16 @@ function generateTypeChartAnalysis() {
     const el = document.getElementById('typeChartAnalysis');
     if (!el) return;
 
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
     const singlesGames = filteredGames.filter(g => g.game_type === 'singles');
     const doublesGames = filteredGames.filter(g => g.game_type === 'doubles');
     const singlesWins = singlesGames.filter(g => g.result === 'win').length;
     const doublesWins = doublesGames.filter(g => g.result === 'win').length;
+    const singlesLosses = singlesGames.length - singlesWins;
+    const doublesLosses = doublesGames.length - doublesWins;
     const singlesRate = singlesGames.length > 0 ? Math.round((singlesWins / singlesGames.length) * 100) : 0;
     const doublesRate = doublesGames.length > 0 ? Math.round((doublesWins / doublesGames.length) * 100) : 0;
 
@@ -2933,67 +2939,132 @@ function generateTypeChartAnalysis() {
         return;
     }
 
-    let analysis = '';
-    const betterMode = singlesRate > doublesRate ? 'singles' : (doublesRate > singlesRate ? 'doubles' : 'equal');
+    let parts = [];
+
+    // Singles stats
+    if (singlesGames.length > 0) {
+        if (isPt) {
+            parts.push(`<strong>Simples:</strong> ${singlesGames.length} jogos (${singlesWins}V/${singlesLosses}D) = <span class="${singlesRate >= 50 ? 'analysis-positive' : 'analysis-negative'}">${singlesRate}%</span>`);
+        } else if (isJa) {
+            parts.push(`<strong>シングルス:</strong> ${singlesGames.length}試合 (${singlesWins}勝/${singlesLosses}敗) = <span class="${singlesRate >= 50 ? 'analysis-positive' : 'analysis-negative'}">${singlesRate}%</span>`);
+        } else {
+            parts.push(`<strong>Singles:</strong> ${singlesGames.length} games (${singlesWins}W/${singlesLosses}L) = <span class="${singlesRate >= 50 ? 'analysis-positive' : 'analysis-negative'}">${singlesRate}%</span>`);
+        }
+    }
+
+    // Doubles stats
+    if (doublesGames.length > 0) {
+        if (isPt) {
+            parts.push(`<strong>Duplas:</strong> ${doublesGames.length} jogos (${doublesWins}V/${doublesLosses}D) = <span class="${doublesRate >= 50 ? 'analysis-positive' : 'analysis-negative'}">${doublesRate}%</span>`);
+        } else if (isJa) {
+            parts.push(`<strong>ダブルス:</strong> ${doublesGames.length}試合 (${doublesWins}勝/${doublesLosses}敗) = <span class="${doublesRate >= 50 ? 'analysis-positive' : 'analysis-negative'}">${doublesRate}%</span>`);
+        } else {
+            parts.push(`<strong>Doubles:</strong> ${doublesGames.length} games (${doublesWins}W/${doublesLosses}L) = <span class="${doublesRate >= 50 ? 'analysis-positive' : 'analysis-negative'}">${doublesRate}%</span>`);
+        }
+    }
+
+    // Comparison
     const diff = Math.abs(singlesRate - doublesRate);
-
-    if (betterMode === 'singles' && diff >= 10) {
-        analysis = t('analysis.betterAtSingles', `Você tem melhor desempenho em <span class="analysis-positive">simples</span> (${singlesRate}% vs ${doublesRate}%). Considere focar mais em partidas individuais.`);
-    } else if (betterMode === 'doubles' && diff >= 10) {
-        analysis = t('analysis.betterAtDoubles', `Você tem melhor desempenho em <span class="analysis-positive">duplas</span> (${doublesRate}% vs ${singlesRate}%). O trabalho em equipe é seu forte!`);
-    } else {
-        analysis = t('analysis.balancedModes', `Desempenho <span class="analysis-highlight">equilibrado</span> entre simples (${singlesRate}%) e duplas (${doublesRate}%).`);
+    if (singlesGames.length > 0 && doublesGames.length > 0 && diff >= 10) {
+        if (singlesRate > doublesRate) {
+            if (isPt) parts.push(`Você é <span class="analysis-highlight">${diff}% melhor</span> em simples.`);
+            else if (isJa) parts.push(`シングルスが<span class="analysis-highlight">${diff}%上</span>`);
+            else parts.push(`You're <span class="analysis-highlight">${diff}% better</span> at singles.`);
+        } else {
+            if (isPt) parts.push(`Você é <span class="analysis-highlight">${diff}% melhor</span> em duplas.`);
+            else if (isJa) parts.push(`ダブルスが<span class="analysis-highlight">${diff}%上</span>`);
+            else parts.push(`You're <span class="analysis-highlight">${diff}% better</span> at doubles.`);
+        }
     }
 
-    // Add volume info
-    const totalGames = filteredGames.length;
-    const singlesPercent = Math.round((singlesGames.length / totalGames) * 100);
-    if (singlesPercent > 70) {
-        analysis += ' ' + t('analysis.mostlySingles', 'Você joga majoritariamente simples.');
-    } else if (singlesPercent < 30) {
-        analysis += ' ' + t('analysis.mostlyDoubles', 'Você joga majoritariamente duplas.');
-    }
-
-    el.innerHTML = analysis;
+    el.innerHTML = parts.join(' | ');
 }
 
 function generateEvolutionChartAnalysis() {
     const el = document.getElementById('evolutionChartAnalysis');
     if (!el) return;
 
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
     if (filteredGames.length < 5) {
         el.innerHTML = '';
         return;
     }
 
-    // Calculate trend
     const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
     const totalGames = sortedGames.length;
-    const firstHalf = sortedGames.slice(0, Math.floor(totalGames / 2));
-    const secondHalf = sortedGames.slice(Math.floor(totalGames / 2));
+    const totalWins = filteredGames.filter(g => g.result === 'win').length;
+    const currentWinRate = Math.round((totalWins / totalGames) * 100);
 
-    const firstHalfWinRate = firstHalf.length > 0 ? (firstHalf.filter(g => g.result === 'win').length / firstHalf.length) * 100 : 0;
-    const secondHalfWinRate = secondHalf.length > 0 ? (secondHalf.filter(g => g.result === 'win').length / secondHalf.length) * 100 : 0;
-    const trend = secondHalfWinRate - firstHalfWinRate;
+    // First vs last 20 games comparison
+    const firstGames = sortedGames.slice(0, Math.min(20, Math.floor(totalGames / 2)));
+    const lastGames = sortedGames.slice(-Math.min(20, Math.floor(totalGames / 2)));
 
-    // Current win rate
-    const currentWinRate = Math.round((filteredGames.filter(g => g.result === 'win').length / filteredGames.length) * 100);
+    const firstRate = Math.round((firstGames.filter(g => g.result === 'win').length / firstGames.length) * 100);
+    const lastRate = Math.round((lastGames.filter(g => g.result === 'win').length / lastGames.length) * 100);
+    const trend = lastRate - firstRate;
 
-    let analysis = '';
-    if (trend > 5) {
-        analysis = t('analysis.improving', `<span class="analysis-positive">Tendência de melhora!</span> Sua taxa de vitória subiu ${Math.round(trend)}% na segunda metade do período.`);
-    } else if (trend < -5) {
-        analysis = t('analysis.declining', `<span class="analysis-negative">Tendência de queda.</span> Sua taxa de vitória caiu ${Math.round(Math.abs(trend))}% na segunda metade do período.`);
+    // Find best and worst periods (by month)
+    const monthStats = {};
+    sortedGames.forEach(game => {
+        const month = game.game_date.substring(0, 7);
+        if (!monthStats[month]) monthStats[month] = { wins: 0, total: 0 };
+        monthStats[month].total++;
+        if (game.result === 'win') monthStats[month].wins++;
+    });
+
+    let bestMonth = null, worstMonth = null;
+    let bestRate = -1, worstRate = 101;
+    Object.entries(monthStats).forEach(([month, stats]) => {
+        if (stats.total >= 5) {
+            const rate = (stats.wins / stats.total) * 100;
+            if (rate > bestRate) { bestRate = rate; bestMonth = month; }
+            if (rate < worstRate) { worstRate = rate; worstMonth = month; }
+        }
+    });
+
+    let parts = [];
+    if (isPt) {
+        parts.push(`<strong>Taxa geral:</strong> <span class="analysis-highlight">${currentWinRate}%</span> (${totalWins}V/${totalGames - totalWins}D em ${totalGames} jogos)`);
+    } else if (isJa) {
+        parts.push(`<strong>総合勝率:</strong> <span class="analysis-highlight">${currentWinRate}%</span> (${totalWins}勝/${totalGames - totalWins}敗、${totalGames}試合)`);
     } else {
-        analysis = t('analysis.stable', `Taxa de vitória <span class="analysis-highlight">estável</span> em torno de ${currentWinRate}%.`);
+        parts.push(`<strong>Overall rate:</strong> <span class="analysis-highlight">${currentWinRate}%</span> (${totalWins}W/${totalGames - totalWins}L in ${totalGames} games)`);
     }
 
-    el.innerHTML = analysis;
+    if (trend > 5) {
+        if (isPt) parts.push(`<span class="analysis-positive">↑ Melhorando ${trend}%</span> (primeiros ${firstGames.length}: ${firstRate}% → últimos ${lastGames.length}: ${lastRate}%)`);
+        else if (isJa) parts.push(`<span class="analysis-positive">↑ ${trend}%上昇中</span> (最初${firstGames.length}試合: ${firstRate}% → 最近${lastGames.length}試合: ${lastRate}%)`);
+        else parts.push(`<span class="analysis-positive">↑ Improving ${trend}%</span> (first ${firstGames.length}: ${firstRate}% → last ${lastGames.length}: ${lastRate}%)`);
+    } else if (trend < -5) {
+        if (isPt) parts.push(`<span class="analysis-negative">↓ Queda de ${Math.abs(trend)}%</span> (primeiros ${firstGames.length}: ${firstRate}% → últimos ${lastGames.length}: ${lastRate}%)`);
+        else if (isJa) parts.push(`<span class="analysis-negative">↓ ${Math.abs(trend)}%下降中</span> (最初${firstGames.length}試合: ${firstRate}% → 最近${lastGames.length}試合: ${lastRate}%)`);
+        else parts.push(`<span class="analysis-negative">↓ Declining ${Math.abs(trend)}%</span> (first ${firstGames.length}: ${firstRate}% → last ${lastGames.length}: ${lastRate}%)`);
+    } else {
+        if (isPt) parts.push(`Desempenho <span class="analysis-highlight">estável</span> ao longo do período`);
+        else if (isJa) parts.push(`パフォーマンスは<span class="analysis-highlight">安定</span>`);
+        else parts.push(`Performance <span class="analysis-highlight">stable</span> over time`);
+    }
+
+    if (bestMonth && worstMonth && bestMonth !== worstMonth) {
+        const formatMonth = (m) => { const [y, mo] = m.split('-'); return `${mo}/${y.slice(-2)}`; };
+        if (isPt) parts.push(`Melhor mês: ${formatMonth(bestMonth)} (${Math.round(bestRate)}%) | Pior: ${formatMonth(worstMonth)} (${Math.round(worstRate)}%)`);
+        else if (isJa) parts.push(`ベスト月: ${formatMonth(bestMonth)} (${Math.round(bestRate)}%) | ワースト: ${formatMonth(worstMonth)} (${Math.round(worstRate)}%)`);
+        else parts.push(`Best month: ${formatMonth(bestMonth)} (${Math.round(bestRate)}%) | Worst: ${formatMonth(worstMonth)} (${Math.round(worstRate)}%)`);
+    }
+
+    el.innerHTML = parts.join('<br>');
 }
 
 function generateStreakChartAnalysis() {
     const el = document.getElementById('streakChartAnalysis');
     if (!el) return;
+
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
 
     if (filteredGames.length < 3) {
         el.innerHTML = '';
@@ -3002,10 +3073,10 @@ function generateStreakChartAnalysis() {
 
     const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
 
-    // Calculate best/worst streaks
+    // Calculate streaks with dates
     let currentStreak = 0;
-    let bestWinStreak = 0;
-    let worstLossStreak = 0;
+    let bestWinStreak = 0, bestWinStreakEnd = null;
+    let worstLossStreak = 0, worstLossStreakEnd = null;
     let tempStreak = 0;
     let lastResult = null;
 
@@ -3017,45 +3088,93 @@ function generateStreakChartAnalysis() {
         }
 
         if (game.result === 'win') {
-            if (tempStreak > bestWinStreak) bestWinStreak = tempStreak;
+            if (tempStreak > bestWinStreak) {
+                bestWinStreak = tempStreak;
+                bestWinStreakEnd = game.game_date;
+            }
         } else {
-            if (tempStreak > worstLossStreak) worstLossStreak = tempStreak;
+            if (tempStreak > worstLossStreak) {
+                worstLossStreak = tempStreak;
+                worstLossStreakEnd = game.game_date;
+            }
         }
 
         lastResult = game.result;
         currentStreak = game.result === 'win' ? tempStreak : -tempStreak;
     });
 
-    let analysis = '';
+    // Count total streaks
+    let winStreaks = 0, lossStreaks = 0;
+    lastResult = null;
+    sortedGames.forEach(game => {
+        if (game.result !== lastResult) {
+            if (game.result === 'win') winStreaks++;
+            else lossStreaks++;
+        }
+        lastResult = game.result;
+    });
+
+    let parts = [];
+
+    // Current streak
+    const formatDate = (d) => { const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0].slice(-2)}`; };
+
     if (currentStreak > 0) {
-        analysis = t('analysis.currentWinStreak', `<span class="analysis-positive">Sequência atual: ${currentStreak} vitória(s)!</span>`);
+        if (isPt) parts.push(`<strong>Agora:</strong> <span class="analysis-positive">${currentStreak} vitória(s) seguida(s)!</span>`);
+        else if (isJa) parts.push(`<strong>現在:</strong> <span class="analysis-positive">${currentStreak}連勝中！</span>`);
+        else parts.push(`<strong>Now:</strong> <span class="analysis-positive">${currentStreak} win(s) in a row!</span>`);
     } else if (currentStreak < 0) {
-        analysis = t('analysis.currentLossStreak', `<span class="analysis-negative">Sequência atual: ${Math.abs(currentStreak)} derrota(s).</span>`);
+        if (isPt) parts.push(`<strong>Agora:</strong> <span class="analysis-negative">${Math.abs(currentStreak)} derrota(s) seguida(s)</span>`);
+        else if (isJa) parts.push(`<strong>現在:</strong> <span class="analysis-negative">${Math.abs(currentStreak)}連敗中</span>`);
+        else parts.push(`<strong>Now:</strong> <span class="analysis-negative">${Math.abs(currentStreak)} loss(es) in a row</span>`);
     }
 
-    analysis += ' ' + t('analysis.streakRecords', `Recorde: ${bestWinStreak} vitórias seguidas. Pior momento: ${worstLossStreak} derrotas seguidas.`);
+    // Records
+    if (isPt) {
+        parts.push(`<strong>Recorde:</strong> <span class="analysis-positive">${bestWinStreak}V seguidas</span> (até ${formatDate(bestWinStreakEnd)}) | <strong>Pior:</strong> <span class="analysis-negative">${worstLossStreak}D seguidas</span> (até ${formatDate(worstLossStreakEnd)})`);
+    } else if (isJa) {
+        parts.push(`<strong>記録:</strong> <span class="analysis-positive">${bestWinStreak}連勝</span> (${formatDate(bestWinStreakEnd)}まで) | <strong>最悪:</strong> <span class="analysis-negative">${worstLossStreak}連敗</span> (${formatDate(worstLossStreakEnd)}まで)`);
+    } else {
+        parts.push(`<strong>Record:</strong> <span class="analysis-positive">${bestWinStreak}W in a row</span> (until ${formatDate(bestWinStreakEnd)}) | <strong>Worst:</strong> <span class="analysis-negative">${worstLossStreak}L in a row</span> (until ${formatDate(worstLossStreakEnd)})`);
+    }
 
-    el.innerHTML = analysis;
+    // Consistency insight
+    const avgStreakLength = (filteredGames.length / (winStreaks + lossStreaks)).toFixed(1);
+    if (avgStreakLength >= 3) {
+        if (isPt) parts.push(`Você tende a ter sequências longas (média de ${avgStreakLength} jogos por sequência)`);
+        else if (isJa) parts.push(`長いストリークの傾向 (平均${avgStreakLength}試合/ストリーク)`);
+        else parts.push(`You tend to have long streaks (avg ${avgStreakLength} games per streak)`);
+    } else {
+        if (isPt) parts.push(`Resultados alternados frequentemente (média de ${avgStreakLength} jogos por sequência)`);
+        else if (isJa) parts.push(`結果が頻繁に入れ替わる (平均${avgStreakLength}試合/ストリーク)`);
+        else parts.push(`Results alternate frequently (avg ${avgStreakLength} games per streak)`);
+    }
+
+    el.innerHTML = parts.join('<br>');
 }
 
 function generateDayOfWeekChartAnalysis() {
     const el = document.getElementById('dayOfWeekChartAnalysis');
     if (!el) return;
 
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
     if (filteredGames.length < 7) {
         el.innerHTML = '';
         return;
     }
 
-    const dayNames = [
-        t('analytics.sunday', 'Domingo'),
-        t('analytics.monday', 'Segunda'),
-        t('analytics.tuesday', 'Terça'),
-        t('analytics.wednesday', 'Quarta'),
-        t('analytics.thursday', 'Quinta'),
-        t('analytics.friday', 'Sexta'),
-        t('analytics.saturday', 'Sábado')
-    ];
+    const dayNamesPt = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const dayNamesShortPt = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNamesShortEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNamesJa = ['日曜', '月曜', '火曜', '水曜', '木曜', '金曜', '土曜'];
+    const dayNamesShortJa = ['日', '月', '火', '水', '木', '金', '土'];
+
+    const dayNames = isPt ? dayNamesPt : (isJa ? dayNamesJa : dayNamesEn);
+    const dayNamesShort = isPt ? dayNamesShortPt : (isJa ? dayNamesShortJa : dayNamesShortEn);
 
     // Calculate stats by day
     const dayStats = Array(7).fill(null).map(() => ({ total: 0, wins: 0 }));
@@ -3066,125 +3185,231 @@ function generateDayOfWeekChartAnalysis() {
         if (game.result === 'win') dayStats[dayOfWeek].wins++;
     });
 
-    // Find best and worst days (with minimum games)
-    let bestDay = -1, worstDay = -1;
-    let bestRate = -1, worstRate = 101;
+    // Sort days by number of games
+    const sortedDays = dayStats.map((stat, day) => ({ day, ...stat, rate: stat.total > 0 ? Math.round((stat.wins / stat.total) * 100) : 0 }))
+        .filter(d => d.total > 0)
+        .sort((a, b) => b.total - a.total);
 
-    dayStats.forEach((stat, day) => {
-        if (stat.total >= 3) {
-            const rate = (stat.wins / stat.total) * 100;
-            if (rate > bestRate) {
-                bestRate = rate;
-                bestDay = day;
-            }
-            if (rate < worstRate) {
-                worstRate = rate;
-                worstDay = day;
-            }
+    // Find best and worst performing days (min 3 games)
+    const qualifiedDays = sortedDays.filter(d => d.total >= 3);
+    const bestDay = qualifiedDays.length > 0 ? qualifiedDays.reduce((best, d) => d.rate > best.rate ? d : best) : null;
+    const worstDay = qualifiedDays.length > 0 ? qualifiedDays.reduce((worst, d) => d.rate < worst.rate ? d : worst) : null;
+
+    let parts = [];
+
+    // Most played days
+    const top3Days = sortedDays.slice(0, 3);
+    if (isPt) {
+        parts.push(`<strong>Dias mais jogados:</strong> ${top3Days.map(d => `${dayNamesShort[d.day]} (${d.total} jogos, ${d.rate}%)`).join(', ')}`);
+    } else if (isJa) {
+        parts.push(`<strong>よく対戦する曜日:</strong> ${top3Days.map(d => `${dayNamesShort[d.day]} (${d.total}試合, ${d.rate}%)`).join(', ')}`);
+    } else {
+        parts.push(`<strong>Most played days:</strong> ${top3Days.map(d => `${dayNamesShort[d.day]} (${d.total} games, ${d.rate}%)`).join(', ')}`);
+    }
+
+    // Best and worst performance
+    if (bestDay && worstDay && bestDay.day !== worstDay.day) {
+        if (isPt) {
+            parts.push(`<strong>Melhor dia:</strong> <span class="analysis-positive">${dayNames[bestDay.day]}</span> com ${bestDay.rate}% (${bestDay.wins}V/${bestDay.total - bestDay.wins}D) | <strong>Pior:</strong> <span class="analysis-negative">${dayNames[worstDay.day]}</span> com ${worstDay.rate}% (${worstDay.wins}V/${worstDay.total - worstDay.wins}D)`);
+        } else if (isJa) {
+            parts.push(`<strong>ベスト:</strong> <span class="analysis-positive">${dayNames[bestDay.day]}</span> ${bestDay.rate}% (${bestDay.wins}勝/${bestDay.total - bestDay.wins}敗) | <strong>ワースト:</strong> <span class="analysis-negative">${dayNames[worstDay.day]}</span> ${worstDay.rate}% (${worstDay.wins}勝/${worstDay.total - worstDay.wins}敗)`);
+        } else {
+            parts.push(`<strong>Best day:</strong> <span class="analysis-positive">${dayNames[bestDay.day]}</span> at ${bestDay.rate}% (${bestDay.wins}W/${bestDay.total - bestDay.wins}L) | <strong>Worst:</strong> <span class="analysis-negative">${dayNames[worstDay.day]}</span> at ${worstDay.rate}% (${worstDay.wins}W/${worstDay.total - worstDay.wins}L)`);
         }
-    });
 
-    // Find most played day
-    const mostPlayedDay = dayStats.reduce((max, stat, day) => stat.total > dayStats[max].total ? day : max, 0);
-
-    let analysis = '';
-    if (bestDay >= 0 && worstDay >= 0 && bestDay !== worstDay) {
-        analysis = t('analysis.dayPerformance', `Melhor dia: <span class="analysis-positive">${dayNames[bestDay]}</span> (${Math.round(bestRate)}%). Pior dia: <span class="analysis-negative">${dayNames[worstDay]}</span> (${Math.round(worstRate)}%).`);
+        // Insight
+        const diff = bestDay.rate - worstDay.rate;
+        if (diff >= 20) {
+            if (isPt) parts.push(`<em>Dica: Você é ${diff}% melhor às ${dayNames[bestDay.day]}s. Considere agendar jogos importantes nesse dia.</em>`);
+            else if (isJa) parts.push(`<em>ヒント: ${dayNames[bestDay.day]}は${diff}%高い。重要な試合をこの日に。</em>`);
+            else parts.push(`<em>Tip: You're ${diff}% better on ${dayNames[bestDay.day]}s. Consider scheduling important games on this day.</em>`);
+        }
     }
 
-    if (dayStats[mostPlayedDay].total > 0) {
-        analysis += ' ' + t('analysis.mostPlayedDay', `Você joga mais às <span class="analysis-highlight">${dayNames[mostPlayedDay]}s</span>.`);
-    }
-
-    el.innerHTML = analysis;
+    el.innerHTML = parts.join('<br>');
 }
 
 function generateSetBalanceChartAnalysis() {
     const el = document.getElementById('setBalanceChartAnalysis');
     if (!el) return;
 
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
     if (filteredGames.length < 5) {
         el.innerHTML = '';
         return;
     }
 
-    // Calculate total sets
-    let totalSetsWon = 0, totalSetsLost = 0;
-
+    // Calculate sets by month
+    const monthStats = {};
     filteredGames.forEach(game => {
+        const month = game.game_date.substring(0, 7);
+        if (!monthStats[month]) monthStats[month] = { setsWon: 0, setsLost: 0, games: 0 };
+
         const scoreData = parseScore(game.score);
         if (scoreData.setsWon > 0 || scoreData.setsLost > 0) {
-            totalSetsWon += scoreData.setsWon;
-            totalSetsLost += scoreData.setsLost;
+            monthStats[month].setsWon += scoreData.setsWon;
+            monthStats[month].setsLost += scoreData.setsLost;
         } else {
-            // Estimate
+            // Estimate based on typical badminton scores
             if (game.result === 'win') {
-                totalSetsWon += 2;
-                totalSetsLost += Math.random() < 0.6 ? 0 : 1;
+                monthStats[month].setsWon += 2;
+                monthStats[month].setsLost += Math.random() < 0.6 ? 0 : 1;
             } else {
-                totalSetsLost += 2;
-                totalSetsWon += Math.random() < 0.6 ? 0 : 1;
+                monthStats[month].setsLost += 2;
+                monthStats[month].setsWon += Math.random() < 0.6 ? 0 : 1;
             }
         }
+        monthStats[month].games++;
+    });
+
+    // Total stats
+    let totalSetsWon = 0, totalSetsLost = 0;
+    Object.values(monthStats).forEach(s => {
+        totalSetsWon += s.setsWon;
+        totalSetsLost += s.setsLost;
     });
 
     const totalSets = totalSetsWon + totalSetsLost;
     const setWinRate = totalSets > 0 ? Math.round((totalSetsWon / totalSets) * 100) : 0;
     const balance = totalSetsWon - totalSetsLost;
 
-    let analysis = t('analysis.setStats', `Total: <span class="analysis-positive">${totalSetsWon}</span> sets ganhos vs <span class="analysis-negative">${totalSetsLost}</span> perdidos.`);
-    analysis += ' ' + t('analysis.setWinRate', `Taxa de sets: <span class="analysis-highlight">${setWinRate}%</span>.`);
+    // Find best and worst months
+    const monthEntries = Object.entries(monthStats).map(([month, stats]) => ({
+        month,
+        ...stats,
+        rate: stats.setsWon + stats.setsLost > 0 ? Math.round((stats.setsWon / (stats.setsWon + stats.setsLost)) * 100) : 0
+    })).filter(m => m.games >= 3);
 
-    if (balance > 0) {
-        analysis += ' ' + t('analysis.positiveBalance', `Saldo positivo de +${balance} sets.`);
-    } else if (balance < 0) {
-        analysis += ' ' + t('analysis.negativeBalance', `Saldo negativo de ${balance} sets.`);
+    const bestMonth = monthEntries.length > 0 ? monthEntries.reduce((best, m) => m.rate > best.rate ? m : best) : null;
+    const worstMonth = monthEntries.length > 0 ? monthEntries.reduce((worst, m) => m.rate < worst.rate ? m : worst) : null;
+
+    let parts = [];
+
+    // Total stats
+    if (isPt) {
+        parts.push(`<strong>Total:</strong> <span class="analysis-positive">${totalSetsWon} sets ganhos</span> vs <span class="analysis-negative">${totalSetsLost} perdidos</span> = <span class="analysis-highlight">${setWinRate}%</span> | Saldo: <span class="${balance >= 0 ? 'analysis-positive' : 'analysis-negative'}">${balance >= 0 ? '+' : ''}${balance}</span>`);
+    } else if (isJa) {
+        parts.push(`<strong>合計:</strong> <span class="analysis-positive">${totalSetsWon}セット勝ち</span> vs <span class="analysis-negative">${totalSetsLost}負け</span> = <span class="analysis-highlight">${setWinRate}%</span> | 差: <span class="${balance >= 0 ? 'analysis-positive' : 'analysis-negative'}">${balance >= 0 ? '+' : ''}${balance}</span>`);
+    } else {
+        parts.push(`<strong>Total:</strong> <span class="analysis-positive">${totalSetsWon} sets won</span> vs <span class="analysis-negative">${totalSetsLost} lost</span> = <span class="analysis-highlight">${setWinRate}%</span> | Balance: <span class="${balance >= 0 ? 'analysis-positive' : 'analysis-negative'}">${balance >= 0 ? '+' : ''}${balance}</span>`);
     }
 
-    el.innerHTML = analysis;
+    // Best and worst months
+    if (bestMonth && worstMonth && bestMonth.month !== worstMonth.month) {
+        const formatMonth = (m) => { const [y, mo] = m.split('-'); return `${mo}/${y.slice(-2)}`; };
+        if (isPt) {
+            parts.push(`<strong>Melhor mês:</strong> ${formatMonth(bestMonth.month)} (${bestMonth.rate}%, ${bestMonth.setsWon}V/${bestMonth.setsLost}D) | <strong>Pior:</strong> ${formatMonth(worstMonth.month)} (${worstMonth.rate}%, ${worstMonth.setsWon}V/${worstMonth.setsLost}D)`);
+        } else if (isJa) {
+            parts.push(`<strong>ベスト月:</strong> ${formatMonth(bestMonth.month)} (${bestMonth.rate}%, ${bestMonth.setsWon}勝/${bestMonth.setsLost}敗) | <strong>ワースト:</strong> ${formatMonth(worstMonth.month)} (${worstMonth.rate}%, ${worstMonth.setsWon}勝/${worstMonth.setsLost}敗)`);
+        } else {
+            parts.push(`<strong>Best month:</strong> ${formatMonth(bestMonth.month)} (${bestMonth.rate}%, ${bestMonth.setsWon}W/${bestMonth.setsLost}L) | <strong>Worst:</strong> ${formatMonth(worstMonth.month)} (${worstMonth.rate}%, ${worstMonth.setsWon}W/${worstMonth.setsLost}L)`);
+        }
+    }
+
+    // Average sets per game
+    const avgSetsPerGame = (totalSets / filteredGames.length).toFixed(1);
+    if (isPt) parts.push(`Média de ${avgSetsPerGame} sets por jogo`);
+    else if (isJa) parts.push(`1試合あたり平均${avgSetsPerGame}セット`);
+    else parts.push(`Average ${avgSetsPerGame} sets per game`);
+
+    el.innerHTML = parts.join('<br>');
 }
 
 function generateFrequencyChartAnalysis() {
     const el = document.getElementById('frequencyChartAnalysis');
     if (!el) return;
 
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
+
     if (filteredGames.length < 5) {
         el.innerHTML = '';
         return;
     }
 
-    // Calculate games per week
     const sortedGames = [...filteredGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
     const firstDate = new Date(sortedGames[0].game_date);
     const lastDate = new Date(sortedGames[sortedGames.length - 1].game_date);
-    const weeks = Math.max(1, Math.ceil((lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000)));
-    const gamesPerWeek = (filteredGames.length / weeks).toFixed(1);
+    const totalDays = Math.max(1, Math.ceil((lastDate - firstDate) / (24 * 60 * 60 * 1000)));
+    const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
+    const gamesPerWeek = (filteredGames.length / totalWeeks).toFixed(1);
+    const gamesPerMonth = (filteredGames.length / (totalDays / 30)).toFixed(1);
 
-    // Find most active month
+    // Calculate by month
     const monthCounts = {};
     filteredGames.forEach(game => {
         const month = game.game_date.substring(0, 7);
         monthCounts[month] = (monthCounts[month] || 0) + 1;
     });
 
-    const sortedMonths = Object.entries(monthCounts).sort((a, b) => b[1] - a[1]);
-    const mostActiveMonth = sortedMonths[0];
+    const monthEntries = Object.entries(monthCounts).sort((a, b) => b[1] - a[1]);
+    const mostActiveMonth = monthEntries[0];
+    const leastActiveMonth = monthEntries[monthEntries.length - 1];
 
-    let analysis = t('analysis.frequency', `Média de <span class="analysis-highlight">${gamesPerWeek}</span> jogos por semana.`);
+    // Recent activity
+    const last30Days = sortedGames.filter(g => {
+        const gameDate = new Date(g.game_date);
+        const daysDiff = (lastDate - gameDate) / (24 * 60 * 60 * 1000);
+        return daysDiff <= 30;
+    }).length;
 
-    if (mostActiveMonth) {
-        const [year, month] = mostActiveMonth[0].split('-');
-        const monthNames = [
-            t('months.jan', 'Jan'), t('months.feb', 'Fev'), t('months.mar', 'Mar'),
-            t('months.apr', 'Abr'), t('months.may', 'Mai'), t('months.jun', 'Jun'),
-            t('months.jul', 'Jul'), t('months.aug', 'Ago'), t('months.sep', 'Set'),
-            t('months.oct', 'Out'), t('months.nov', 'Nov'), t('months.dec', 'Dez')
-        ];
-        const monthName = monthNames[parseInt(month) - 1];
-        analysis += ' ' + t('analysis.mostActiveMonth', `Mês mais ativo: <span class="analysis-highlight">${monthName}/${year}</span> (${mostActiveMonth[1]} jogos).`);
+    // Weeks without games
+    const weekMap = {};
+    sortedGames.forEach(g => {
+        const d = new Date(g.game_date);
+        const weekNum = Math.floor((d - firstDate) / (7 * 24 * 60 * 60 * 1000));
+        weekMap[weekNum] = true;
+    });
+    const weeksWithoutGames = totalWeeks - Object.keys(weekMap).length;
+
+    let parts = [];
+
+    // Overall frequency
+    if (isPt) {
+        parts.push(`<strong>Frequência:</strong> <span class="analysis-highlight">${gamesPerWeek}</span> jogos/semana (${gamesPerMonth}/mês) | <strong>Total:</strong> ${filteredGames.length} jogos em ${totalWeeks} semanas`);
+    } else if (isJa) {
+        parts.push(`<strong>頻度:</strong> <span class="analysis-highlight">${gamesPerWeek}</span>試合/週 (${gamesPerMonth}/月) | <strong>合計:</strong> ${totalWeeks}週間で${filteredGames.length}試合`);
+    } else {
+        parts.push(`<strong>Frequency:</strong> <span class="analysis-highlight">${gamesPerWeek}</span> games/week (${gamesPerMonth}/month) | <strong>Total:</strong> ${filteredGames.length} games in ${totalWeeks} weeks`);
     }
 
-    el.innerHTML = analysis;
+    // Most and least active
+    if (mostActiveMonth && leastActiveMonth && mostActiveMonth[0] !== leastActiveMonth[0]) {
+        const formatMonth = (m) => { const [y, mo] = m.split('-'); return `${mo}/${y.slice(-2)}`; };
+        if (isPt) {
+            parts.push(`<strong>Mais ativo:</strong> ${formatMonth(mostActiveMonth[0])} (${mostActiveMonth[1]} jogos) | <strong>Menos ativo:</strong> ${formatMonth(leastActiveMonth[0])} (${leastActiveMonth[1]} jogos)`);
+        } else if (isJa) {
+            parts.push(`<strong>最多:</strong> ${formatMonth(mostActiveMonth[0])} (${mostActiveMonth[1]}試合) | <strong>最少:</strong> ${formatMonth(leastActiveMonth[0])} (${leastActiveMonth[1]}試合)`);
+        } else {
+            parts.push(`<strong>Most active:</strong> ${formatMonth(mostActiveMonth[0])} (${mostActiveMonth[1]} games) | <strong>Least active:</strong> ${formatMonth(leastActiveMonth[0])} (${leastActiveMonth[1]} games)`);
+        }
+    }
+
+    // Recent activity insight
+    if (isPt) {
+        parts.push(`<strong>Últimos 30 dias:</strong> ${last30Days} jogos | Semanas sem jogar: ${weeksWithoutGames}`);
+    } else if (isJa) {
+        parts.push(`<strong>過去30日:</strong> ${last30Days}試合 | 試合なし週: ${weeksWithoutGames}`);
+    } else {
+        parts.push(`<strong>Last 30 days:</strong> ${last30Days} games | Weeks without games: ${weeksWithoutGames}`);
+    }
+
+    // Consistency insight
+    if (weeksWithoutGames === 0) {
+        if (isPt) parts.push(`<em>Excelente consistência! Você jogou toda semana.</em>`);
+        else if (isJa) parts.push(`<em>素晴らしい一貫性！毎週プレーしています。</em>`);
+        else parts.push(`<em>Excellent consistency! You played every week.</em>`);
+    } else if (weeksWithoutGames > totalWeeks / 2) {
+        if (isPt) parts.push(`<em>Dica: Tente jogar com mais regularidade para manter o ritmo.</em>`);
+        else if (isJa) parts.push(`<em>ヒント: リズムを維持するために定期的にプレーを。</em>`);
+        else parts.push(`<em>Tip: Try playing more regularly to maintain rhythm.</em>`);
+    }
+
+    el.innerHTML = parts.join('<br>');
 }
 
 // =============================================================================
@@ -3257,23 +3482,52 @@ function analyzePerformance() {
 
     const totalGames = filteredGames.length;
     const wins = filteredGames.filter(g => g.result === 'win').length;
+    const losses = totalGames - wins;
     const winRate = Math.round((wins / totalGames) * 100);
+
+    // Language detection for text
+    const lang = currentLanguage || 'pt-BR';
+    const isPt = lang.startsWith('pt');
+    const isJa = lang.startsWith('ja');
 
     // Singles vs Doubles analysis
     const singlesGames = filteredGames.filter(g => g.game_type === 'singles');
     const doublesGames = filteredGames.filter(g => g.game_type === 'doubles');
-    const singlesWinRate = singlesGames.length > 3 ? Math.round((singlesGames.filter(g => g.result === 'win').length / singlesGames.length) * 100) : null;
-    const doublesWinRate = doublesGames.length > 3 ? Math.round((doublesGames.filter(g => g.result === 'win').length / doublesGames.length) * 100) : null;
+    const singlesWins = singlesGames.filter(g => g.result === 'win').length;
+    const doublesWins = doublesGames.filter(g => g.result === 'win').length;
+    const singlesWinRate = singlesGames.length > 3 ? Math.round((singlesWins / singlesGames.length) * 100) : null;
+    const doublesWinRate = doublesGames.length > 3 ? Math.round((doublesWins / doublesGames.length) * 100) : null;
 
     if (singlesWinRate !== null && doublesWinRate !== null) {
-        if (singlesWinRate - doublesWinRate > 15) {
-            strengths.push(t('analysis.strengthSingles', `Excelente em simples (${singlesWinRate}% de vitórias)`));
-            weaknesses.push(t('analysis.weakDoubles', `Desempenho inferior em duplas (${doublesWinRate}%)`));
-            tips.push(t('analysis.tipDoubles', 'Pratique mais comunicação e posicionamento com parceiros de duplas'));
-        } else if (doublesWinRate - singlesWinRate > 15) {
-            strengths.push(t('analysis.strengthDoubles', `Excelente em duplas (${doublesWinRate}% de vitórias)`));
-            weaknesses.push(t('analysis.weakSingles', `Desempenho inferior em simples (${singlesWinRate}%)`));
-            tips.push(t('analysis.tipSingles', 'Trabalhe condicionamento físico e cobertura de quadra para simples'));
+        const diff = singlesWinRate - doublesWinRate;
+        if (diff > 15) {
+            if (isPt) {
+                strengths.push(`Ótimo desempenho em <strong>simples</strong>: ${singlesWinRate}% (${singlesWins}V/${singlesGames.length - singlesWins}D em ${singlesGames.length} jogos)`);
+                weaknesses.push(`Desempenho inferior em <strong>duplas</strong>: ${doublesWinRate}% (${doublesWins}V/${doublesGames.length - doublesWins}D) - ${Math.abs(diff)}% abaixo de simples`);
+                tips.push(`Pratique comunicação e posicionamento em duplas - sua taxa de ${doublesWinRate}% pode melhorar com treino específico`);
+            } else if (isJa) {
+                strengths.push(`<strong>シングルス</strong>で優秀: ${singlesWinRate}% (${singlesWins}勝/${singlesGames.length - singlesWins}敗、${singlesGames.length}試合)`);
+                weaknesses.push(`<strong>ダブルス</strong>は弱い: ${doublesWinRate}% (${doublesWins}勝/${doublesGames.length - doublesWins}敗) - シングルスより${Math.abs(diff)}%低い`);
+                tips.push(`ダブルスのコミュニケーションとポジショニングを練習 - ${doublesWinRate}%の勝率は改善可能`);
+            } else {
+                strengths.push(`Great at <strong>singles</strong>: ${singlesWinRate}% (${singlesWins}W/${singlesGames.length - singlesWins}L in ${singlesGames.length} games)`);
+                weaknesses.push(`Lower performance in <strong>doubles</strong>: ${doublesWinRate}% (${doublesWins}W/${doublesGames.length - doublesWins}L) - ${Math.abs(diff)}% below singles`);
+                tips.push(`Practice communication and positioning in doubles - your ${doublesWinRate}% rate can improve with specific training`);
+            }
+        } else if (diff < -15) {
+            if (isPt) {
+                strengths.push(`Ótimo desempenho em <strong>duplas</strong>: ${doublesWinRate}% (${doublesWins}V/${doublesGames.length - doublesWins}D em ${doublesGames.length} jogos)`);
+                weaknesses.push(`Desempenho inferior em <strong>simples</strong>: ${singlesWinRate}% (${singlesWins}V/${singlesGames.length - singlesWins}D) - ${Math.abs(diff)}% abaixo de duplas`);
+                tips.push(`Trabalhe condicionamento físico e cobertura de quadra - sua taxa de ${singlesWinRate}% em simples pode melhorar`);
+            } else if (isJa) {
+                strengths.push(`<strong>ダブルス</strong>で優秀: ${doublesWinRate}% (${doublesWins}勝/${doublesGames.length - doublesWins}敗、${doublesGames.length}試合)`);
+                weaknesses.push(`<strong>シングルス</strong>は弱い: ${singlesWinRate}% (${singlesWins}勝/${singlesGames.length - singlesWins}敗) - ダブルスより${Math.abs(diff)}%低い`);
+                tips.push(`体力とコートカバーを改善 - シングルスの${singlesWinRate}%は改善可能`);
+            } else {
+                strengths.push(`Great at <strong>doubles</strong>: ${doublesWinRate}% (${doublesWins}W/${doublesGames.length - doublesWins}L in ${doublesGames.length} games)`);
+                weaknesses.push(`Lower performance in <strong>singles</strong>: ${singlesWinRate}% (${singlesWins}W/${singlesGames.length - singlesWins}L) - ${Math.abs(diff)}% below doubles`);
+                tips.push(`Work on physical conditioning and court coverage - your ${singlesWinRate}% singles rate can improve`);
+            }
         }
     }
 
@@ -3286,29 +3540,42 @@ function analyzePerformance() {
         if (game.result === 'win') dayStats[dayOfWeek].wins++;
     });
 
-    const dayNames = [
-        t('analytics.sunday', 'Domingo'), t('analytics.monday', 'Segunda'),
-        t('analytics.tuesday', 'Terça'), t('analytics.wednesday', 'Quarta'),
-        t('analytics.thursday', 'Quinta'), t('analytics.friday', 'Sexta'),
-        t('analytics.saturday', 'Sábado')
-    ];
+    const dayNamesPt = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNamesJa = ['日曜', '月曜', '火曜', '水曜', '木曜', '金曜', '土曜'];
+    const dayNames = isPt ? dayNamesPt : (isJa ? dayNamesJa : dayNamesEn);
 
     let bestDay = -1, worstDay = -1;
     let bestRate = -1, worstRate = 101;
+    let bestDayStats = null, worstDayStats = null;
     dayStats.forEach((stat, day) => {
         if (stat.total >= 5) {
             const rate = (stat.wins / stat.total) * 100;
-            if (rate > bestRate) { bestRate = rate; bestDay = day; }
-            if (rate < worstRate) { worstRate = rate; worstDay = day; }
+            if (rate > bestRate) { bestRate = rate; bestDay = day; bestDayStats = stat; }
+            if (rate < worstRate) { worstRate = rate; worstDay = day; worstDayStats = stat; }
         }
     });
 
-    if (bestDay >= 0 && bestRate >= 80) {
-        strengths.push(t('analysis.strengthDay', `Ótimo desempenho às ${dayNames[bestDay]}s (${Math.round(bestRate)}%)`));
+    if (bestDay >= 0 && bestRate >= 70) {
+        if (isPt) {
+            strengths.push(`Melhor dia: <strong>${dayNames[bestDay]}</strong> com ${Math.round(bestRate)}% (${bestDayStats.wins}V/${bestDayStats.total - bestDayStats.wins}D em ${bestDayStats.total} jogos)`);
+        } else if (isJa) {
+            strengths.push(`ベストの日: <strong>${dayNames[bestDay]}</strong> ${Math.round(bestRate)}% (${bestDayStats.wins}勝/${bestDayStats.total - bestDayStats.wins}敗、${bestDayStats.total}試合)`);
+        } else {
+            strengths.push(`Best day: <strong>${dayNames[bestDay]}</strong> at ${Math.round(bestRate)}% (${bestDayStats.wins}W/${bestDayStats.total - bestDayStats.wins}L in ${bestDayStats.total} games)`);
+        }
     }
-    if (worstDay >= 0 && worstRate < 50) {
-        weaknesses.push(t('analysis.weakDay', `Desempenho fraco às ${dayNames[worstDay]}s (${Math.round(worstRate)}%)`));
-        tips.push(t('analysis.tipDay', `Considere ajustar horários ou preparação para jogos às ${dayNames[worstDay]}s`));
+    if (worstDay >= 0 && worstRate < 50 && bestDay !== worstDay) {
+        if (isPt) {
+            weaknesses.push(`Pior dia: <strong>${dayNames[worstDay]}</strong> com ${Math.round(worstRate)}% (${worstDayStats.wins}V/${worstDayStats.total - worstDayStats.wins}D em ${worstDayStats.total} jogos)`);
+            tips.push(`Considere ajustar preparação para jogos às ${dayNames[worstDay]}s - ${Math.round(bestRate - worstRate)}% abaixo do seu melhor dia`);
+        } else if (isJa) {
+            weaknesses.push(`最悪の日: <strong>${dayNames[worstDay]}</strong> ${Math.round(worstRate)}% (${worstDayStats.wins}勝/${worstDayStats.total - worstDayStats.wins}敗、${worstDayStats.total}試合)`);
+            tips.push(`${dayNames[worstDay]}の試合の準備を調整 - ベストの日より${Math.round(bestRate - worstRate)}%低い`);
+        } else {
+            weaknesses.push(`Worst day: <strong>${dayNames[worstDay]}</strong> at ${Math.round(worstRate)}% (${worstDayStats.wins}W/${worstDayStats.total - worstDayStats.wins}L in ${worstDayStats.total} games)`);
+            tips.push(`Consider adjusting preparation for ${dayNames[worstDay]} games - ${Math.round(bestRate - worstRate)}% below your best day`);
+        }
     }
 
     // Trend analysis
@@ -3317,21 +3584,41 @@ function analyzePerformance() {
     const olderGames = sortedGames.slice(0, -20);
 
     if (recentGames.length >= 10 && olderGames.length >= 10) {
-        const recentWinRate = Math.round((recentGames.filter(g => g.result === 'win').length / recentGames.length) * 100);
-        const olderWinRate = Math.round((olderGames.filter(g => g.result === 'win').length / olderGames.length) * 100);
+        const recentWins = recentGames.filter(g => g.result === 'win').length;
+        const olderWins = olderGames.filter(g => g.result === 'win').length;
+        const recentWinRate = Math.round((recentWins / recentGames.length) * 100);
+        const olderWinRate = Math.round((olderWins / olderGames.length) * 100);
+        const diff = recentWinRate - olderWinRate;
 
-        if (recentWinRate - olderWinRate > 10) {
-            strengths.push(t('analysis.improving', `Em fase de melhora (+${recentWinRate - olderWinRate}% nos últimos jogos)`));
-        } else if (olderWinRate - recentWinRate > 10) {
-            weaknesses.push(t('analysis.declining', `Desempenho em queda (-${olderWinRate - recentWinRate}% nos últimos jogos)`));
-            tips.push(t('analysis.tipRecovery', 'Revise fundamentos e considere descanso ou variação de treino'));
+        if (diff > 10) {
+            if (isPt) {
+                strengths.push(`📈 <strong>Em melhora!</strong> Últimos 20 jogos: ${recentWinRate}% (${recentWins}V) vs anteriores: ${olderWinRate}% (+${diff}%)`);
+            } else if (isJa) {
+                strengths.push(`📈 <strong>上昇中！</strong> 最近20試合: ${recentWinRate}% (${recentWins}勝) vs 以前: ${olderWinRate}% (+${diff}%)`);
+            } else {
+                strengths.push(`📈 <strong>Improving!</strong> Last 20 games: ${recentWinRate}% (${recentWins}W) vs earlier: ${olderWinRate}% (+${diff}%)`);
+            }
+        } else if (diff < -10) {
+            if (isPt) {
+                weaknesses.push(`📉 <strong>Em queda!</strong> Últimos 20 jogos: ${recentWinRate}% (${recentWins}V) vs anteriores: ${olderWinRate}% (${diff}%)`);
+                tips.push(`Revise fundamentos e considere descanso - queda de ${Math.abs(diff)}% nos últimos jogos`);
+            } else if (isJa) {
+                weaknesses.push(`📉 <strong>下降中！</strong> 最近20試合: ${recentWinRate}% (${recentWins}勝) vs 以前: ${olderWinRate}% (${diff}%)`);
+                tips.push(`基本を見直して休息も検討 - 最近${Math.abs(diff)}%低下`);
+            } else {
+                weaknesses.push(`📉 <strong>Declining!</strong> Last 20 games: ${recentWinRate}% (${recentWins}W) vs earlier: ${olderWinRate}% (${diff}%)`);
+                tips.push(`Review fundamentals and consider rest - ${Math.abs(diff)}% drop in recent games`);
+            }
         }
     }
 
-    // Streak analysis
+    // Streak analysis with more detail
     let currentStreak = 0;
     let tempStreak = 0;
     let lastResult = null;
+    let maxWinStreak = 0, maxLossStreak = 0;
+    let maxWinStreakEndDate = null, maxLossStreakEndDate = null;
+
     sortedGames.forEach(game => {
         if (game.result === lastResult) {
             tempStreak++;
@@ -3340,45 +3627,107 @@ function analyzePerformance() {
         }
         lastResult = game.result;
         currentStreak = game.result === 'win' ? tempStreak : -tempStreak;
+
+        if (game.result === 'win' && tempStreak > maxWinStreak) {
+            maxWinStreak = tempStreak;
+            maxWinStreakEndDate = game.game_date;
+        } else if (game.result === 'loss' && tempStreak > maxLossStreak) {
+            maxLossStreak = tempStreak;
+            maxLossStreakEndDate = game.game_date;
+        }
     });
 
-    if (currentStreak >= 5) {
-        strengths.push(t('analysis.hotStreak', `Sequência quente de ${currentStreak} vitórias!`));
-    } else if (currentStreak <= -5) {
-        weaknesses.push(t('analysis.coldStreak', `Fase difícil com ${Math.abs(currentStreak)} derrotas seguidas`));
-        tips.push(t('analysis.tipStreak', 'Foque em jogos contra adversários mais fracos para recuperar confiança'));
+    const formatStreakDate = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+    };
+
+    if (currentStreak >= 3) {
+        if (isPt) {
+            strengths.push(`🔥 <strong>Sequência atual: ${currentStreak} vitórias seguidas!</strong> Recorde: ${maxWinStreak}V (até ${formatStreakDate(maxWinStreakEndDate)})`);
+        } else if (isJa) {
+            strengths.push(`🔥 <strong>現在${currentStreak}連勝中！</strong> 記録: ${maxWinStreak}連勝 (${formatStreakDate(maxWinStreakEndDate)}まで)`);
+        } else {
+            strengths.push(`🔥 <strong>Current streak: ${currentStreak} wins in a row!</strong> Record: ${maxWinStreak}W (until ${formatStreakDate(maxWinStreakEndDate)})`);
+        }
+    } else if (currentStreak <= -3) {
+        if (isPt) {
+            weaknesses.push(`❄️ <strong>Sequência atual: ${Math.abs(currentStreak)} derrotas seguidas</strong> | Pior fase: ${maxLossStreak}D (até ${formatStreakDate(maxLossStreakEndDate)})`);
+            tips.push(`Foque em jogos contra adversários mais acessíveis para quebrar a sequência de ${Math.abs(currentStreak)} derrotas`);
+        } else if (isJa) {
+            weaknesses.push(`❄️ <strong>現在${Math.abs(currentStreak)}連敗中</strong> | 最悪: ${maxLossStreak}連敗 (${formatStreakDate(maxLossStreakEndDate)}まで)`);
+            tips.push(`連敗(${Math.abs(currentStreak)}敗)を止めるため、相性の良い相手と対戦を`);
+        } else {
+            weaknesses.push(`❄️ <strong>Current streak: ${Math.abs(currentStreak)} losses in a row</strong> | Worst: ${maxLossStreak}L (until ${formatStreakDate(maxLossStreakEndDate)})`);
+            tips.push(`Focus on games against more accessible opponents to break the ${Math.abs(currentStreak)}-loss streak`);
+        }
     }
 
-    // General win rate tips
+    // General win rate tips with context
     if (winRate < 40) {
-        tips.push(t('analysis.tipLowWinRate', 'Considere treinos focados em fundamentos: saque, recepção e posicionamento'));
-        tips.push(t('analysis.tipAnalyze', 'Analise seus jogos para identificar erros recorrentes'));
+        if (isPt) {
+            tips.push(`Com ${winRate}% de vitórias (${wins}V/${losses}D), foque em fundamentos: saque, recepção e posicionamento`);
+            tips.push(`Analise seus ${losses} derrotas para identificar padrões de erro recorrentes`);
+        } else if (isJa) {
+            tips.push(`勝率${winRate}% (${wins}勝/${losses}敗)なので、基本に集中: サーブ、レシーブ、ポジショニング`);
+            tips.push(`${losses}敗を分析して繰り返しのミスパターンを特定`);
+        } else {
+            tips.push(`With ${winRate}% win rate (${wins}W/${losses}L), focus on fundamentals: serve, reception and positioning`);
+            tips.push(`Analyze your ${losses} losses to identify recurring error patterns`);
+        }
     } else if (winRate >= 70) {
-        tips.push(t('analysis.tipHighWinRate', 'Busque adversários mais desafiadores para continuar evoluindo'));
+        if (isPt) {
+            tips.push(`Excelente ${winRate}% de vitórias! Busque adversários mais desafiadores para continuar evoluindo`);
+        } else if (isJa) {
+            tips.push(`素晴らしい${winRate}%の勝率！さらに向上するため、より強い相手を探して`);
+        } else {
+            tips.push(`Excellent ${winRate}% win rate! Seek more challenging opponents to keep improving`);
+        }
     }
 
-    // Frequency tips
+    // Frequency analysis
     const firstDate = new Date(sortedGames[0].game_date);
     const lastDate = new Date(sortedGames[sortedGames.length - 1].game_date);
     const weeks = Math.max(1, Math.ceil((lastDate - firstDate) / (7 * 24 * 60 * 60 * 1000)));
-    const gamesPerWeek = filteredGames.length / weeks;
+    const gamesPerWeek = (filteredGames.length / weeks).toFixed(1);
 
-    if (gamesPerWeek < 1) {
-        tips.push(t('analysis.tipMoreGames', 'Jogue com mais frequência para manter ritmo e evolução'));
-    } else if (gamesPerWeek > 5) {
-        tips.push(t('analysis.tipRest', 'Atenção ao descanso - muitos jogos podem causar fadiga'));
+    if (parseFloat(gamesPerWeek) < 1) {
+        if (isPt) {
+            tips.push(`Frequência baixa: ${gamesPerWeek} jogos/semana. Jogue mais para manter ritmo (${totalGames} jogos em ${weeks} semanas)`);
+        } else if (isJa) {
+            tips.push(`頻度が低い: ${gamesPerWeek}試合/週。リズムを維持するためにもっとプレー (${weeks}週間で${totalGames}試合)`);
+        } else {
+            tips.push(`Low frequency: ${gamesPerWeek} games/week. Play more to maintain rhythm (${totalGames} games in ${weeks} weeks)`);
+        }
+    } else if (parseFloat(gamesPerWeek) > 5) {
+        if (isPt) {
+            tips.push(`Alta frequência: ${gamesPerWeek} jogos/semana. Atenção ao descanso para evitar fadiga e lesões`);
+        } else if (isJa) {
+            tips.push(`高頻度: ${gamesPerWeek}試合/週。疲労とケガを避けるため休息に注意`);
+        } else {
+            tips.push(`High frequency: ${gamesPerWeek} games/week. Pay attention to rest to avoid fatigue and injuries`);
+        }
     }
 
-    // Build summary
-    let summaryParts = [];
-    summaryParts.push(t('analysis.summaryGames', `${totalGames} partidas analisadas`));
-    summaryParts.push(t('analysis.summaryWinRate', `${winRate}% de vitórias`));
-
-    if (singlesGames.length > 0 && doublesGames.length > 0) {
-        summaryParts.push(t('analysis.summarySplitGames', `${singlesGames.length} simples e ${doublesGames.length} duplas`));
+    // Build detailed summary
+    let summary = '';
+    if (isPt) {
+        summary = `<strong>${totalGames}</strong> partidas analisadas | <strong>${winRate}%</strong> de vitórias (${wins}V/${losses}D)`;
+        if (singlesGames.length > 0 && doublesGames.length > 0) {
+            summary += ` | ${singlesGames.length} simples (${singlesWinRate || '--'}%) e ${doublesGames.length} duplas (${doublesWinRate || '--'}%)`;
+        }
+    } else if (isJa) {
+        summary = `<strong>${totalGames}</strong>試合分析 | 勝率<strong>${winRate}%</strong> (${wins}勝/${losses}敗)`;
+        if (singlesGames.length > 0 && doublesGames.length > 0) {
+            summary += ` | シングルス${singlesGames.length}試合 (${singlesWinRate || '--'}%)、ダブルス${doublesGames.length}試合 (${doublesWinRate || '--'}%)`;
+        }
+    } else {
+        summary = `<strong>${totalGames}</strong> games analyzed | <strong>${winRate}%</strong> win rate (${wins}W/${losses}L)`;
+        if (singlesGames.length > 0 && doublesGames.length > 0) {
+            summary += ` | ${singlesGames.length} singles (${singlesWinRate || '--'}%) and ${doublesGames.length} doubles (${doublesWinRate || '--'}%)`;
+        }
     }
-
-    const summary = summaryParts.join(' | ');
 
     return { strengths, weaknesses, tips, summary };
 }
