@@ -2889,6 +2889,8 @@ function translateStyle(style) {
 }
 
 function translateAgeGroup(ageGroup) {
+    if (!ageGroup) return '20-39';
+
     const ageGroupKeys = {
         under_20: 'players.under20',
         '20_39': 'players.age2039',
@@ -2901,7 +2903,9 @@ function translateAgeGroup(ageGroup) {
         '40_59': '40-59',
         '60_plus': '60+'
     };
-    return t(ageGroupKeys[ageGroup], fallbacks[ageGroup] || ageGroup || '20-39');
+    const key = ageGroupKeys[ageGroup];
+    if (!key) return fallbacks[ageGroup] || ageGroup || '20-39';
+    return t(key, fallbacks[ageGroup] || ageGroup || '20-39');
 }
 
 // =============================================================================

@@ -71,6 +71,7 @@ window.i18n = {
     },
 
     get(key) {
+        if (!key || typeof key !== 'string') return null;
         const keys = key.split('.');
         let value = this.translations;
 
