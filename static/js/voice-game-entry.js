@@ -180,7 +180,7 @@ const voiceGameTranslations = {
         step4_lost: '✅ <span class="voice-highlight">Defeat</span> registered.',
         step4_draw: '✅ <span class="voice-highlight">Draw</span> registered.',
 
-        step5_prompt: '<span class="voice-highlight">📊 SCORE</span>\n\n<span class="voice-hint">Say the score (e.g., "3 to 1" or "6-4 6-3")</span>',
+        step5_prompt: '<span class="voice-highlight">📊 SCORE</span>\n\n<span class="voice-hint">Say the score (e.g., "three one" or "six four")</span>',
         step5_confirmed: '✅ Score:\n<span class="voice-highlight">{score}</span>',
         step5_skipped: '⏭️ Score skipped.',
 
@@ -424,7 +424,7 @@ function searchPlayerByVoice(spokenName) {
  *
  * Supported formats:
  * - Portuguese: "três a um" → "3-1", "vinte e um a dezenove" → "21-19"
- * - English: "three one" or "three to one" → "3-1" (without "to" is more reliable)
+ * - English: "three one" → "3-1", "six four" → "6-4" (WITHOUT "to")
  * - Japanese: "三対一" or "さん たい いち" → "3-1"
  */
 function convertSpokenNumbersToDigits(text) {
@@ -454,11 +454,6 @@ function convertSpokenNumbersToDigits(text) {
     // Pre-process: Handle Japanese separator "たい" (tai) before number conversion
     result = result.replace(/\s*たい\s*/g, ' TAI_SEPARATOR ');
 
-    // Pre-process: Handle separators BEFORE converting numbers
-    // This prevents "to" from being confused with "two"
-    // English: " to " -> separator (but be careful not to match "two")
-    result = result.replace(/\s+to\s+/gi, ' TO_SEPARATOR ');
-
     // Sort by length descending to match longer phrases first (e.g., "vinte e um" before "um")
     const sortedWords = Object.keys(numberWords).sort((a, b) => b.length - a.length);
 
@@ -468,7 +463,6 @@ function convertSpokenNumbersToDigits(text) {
     }
 
     // Now convert separators to "-"
-    result = result.replace(/\s*TO_SEPARATOR\s*/g, '-');
     result = result.replace(/\s*TAI_SEPARATOR\s*/g, '-');
 
     // Clean up common separators: "a" -> "-", "対" -> "-", "x" -> "-"
@@ -479,23 +473,13 @@ function convertSpokenNumbersToDigits(text) {
     // Handle consecutive digits with space: "3 1" -> "3-1"
     result = result.replace(/(\d+)\s+(\d+)/g, '$1-$2');
 
-    // Handle special case: "221" from "two to one" where "to" was recognized as "2"
-    // Pattern: 3 digits where middle is "2" (from "to") - convert to first-last
-    // e.g., "221" -> "2-1", "321" -> "3-1", "621" -> "6-1"
-    if (/^\d2\d$/.test(result)) {
-        result = result.charAt(0) + '-' + result.charAt(2);
-    }
-
     // Handle 2-digit scores without separator (e.g., "31" from "three one")
-    // Only apply if no separator already exists
     if (/^\d{2}$/.test(result) && !result.includes('-')) {
         result = result.charAt(0) + '-' + result.charAt(1);
     }
 
-    // Handle 3-digit scores like "621" (6-21 in badminton/table tennis tiebreak)
-    // But only if not already processed above
+    // Handle 3-digit scores (e.g., "621" -> "6-21" for tiebreak)
     if (/^\d{3}$/.test(result) && !result.includes('-')) {
-        // Assume format is X-YY (single digit vs double digit)
         result = result.charAt(0) + '-' + result.substring(1);
     }
 
