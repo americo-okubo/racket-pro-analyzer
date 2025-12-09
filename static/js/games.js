@@ -1443,59 +1443,53 @@ function getStreakDisplay(stats) {
     return streakHtml;
 }
 
-// Calculate trend based on recent games vs older games
+// Calculate trend using linear regression
 function calculateTrend(playerGames) {
     if (playerGames.length < 4) {
-        return { trend: null, trendDirection: null, recentWinRate: null, olderWinRate: null };
+        return { trend: null, trendDirection: null, slope: null };
     }
 
-    // Sort by date descending (most recent first)
-    const sortedGames = [...playerGames].sort((a, b) => b.game_date.localeCompare(a.game_date));
+    // Sort by date ascending (oldest first) for regression
+    const sortedGames = [...playerGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
 
-    // Check current streak (last 3 games)
-    const last3Games = sortedGames.slice(0, 3);
-    const last3Wins = last3Games.filter(g => g.result === 'win').length;
-    const onWinStreak = last3Wins === 3;
-    const onLossStreak = last3Wins === 0;
+    // Linear regression on win/loss results
+    // x = game index (1, 2, 3, ...)
+    // y = result (1 = win, 0 = loss)
+    const n = sortedGames.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
 
-    // Split into recent (last 50%) and older (first 50%)
-    const midpoint = Math.floor(sortedGames.length / 2);
-    const recentGames = sortedGames.slice(0, midpoint);
-    const olderGames = sortedGames.slice(midpoint);
+    sortedGames.forEach((game, index) => {
+        const x = index + 1;
+        const y = game.result === 'win' ? 1 : 0;
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumX2 += x * x;
+    });
 
-    // Calculate win rates
-    const recentWins = recentGames.filter(g => g.result === 'win').length;
-    const olderWins = olderGames.filter(g => g.result === 'win').length;
+    // slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX^2)
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
 
-    const recentWinRate = Math.round((recentWins / recentGames.length) * 100);
-    const olderWinRate = Math.round((olderWins / olderGames.length) * 100);
-
-    const difference = recentWinRate - olderWinRate;
+    // Slope = change in win probability per game
+    // Multiply by 100 for percentage points per game
+    const slopePercent = slope * 100;
 
     let trend = null;
     let trendDirection = null;
 
-    // Priority: current streak overrides statistical trend when they conflict
-    if (onWinStreak) {
-        // On a winning streak - show improving or stable, never declining
+    // Threshold: ~2% change per game is significant
+    if (slopePercent >= 2) {
         trendDirection = 'up';
         trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')}</span>`;
-    } else if (onLossStreak) {
-        // On a losing streak - show declining or stable, never improving
+    } else if (slopePercent <= -2) {
         trendDirection = 'down';
         trend = `<span class="trend trend-down">↘️ ${t('analytics.declining', 'Piorando')}</span>`;
-    } else if (difference >= 15) {
-        trendDirection = 'up';
-        trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')} (+${difference}%)</span>`;
-    } else if (difference <= -15) {
-        trendDirection = 'down';
-        trend = `<span class="trend trend-down">↘️ ${t('analytics.declining', 'Piorando')} (${difference}%)</span>`;
-    } else if (playerGames.length >= 4) {
+    } else {
         trendDirection = 'stable';
         trend = `<span class="trend trend-stable">→ ${t('analytics.stable', 'Estável')}</span>`;
     }
 
-    return { trend, trendDirection, recentWinRate, olderWinRate };
+    return { trend, trendDirection, slope: slopePercent };
 }
 
 // =============================================================================
