@@ -479,10 +479,25 @@ function convertSpokenNumbersToDigits(text) {
     // Handle consecutive digits with space: "3 1" -> "3-1"
     result = result.replace(/(\d+)\s+(\d+)/g, '$1-$2');
 
-    // Handle consecutive digits without space (e.g., "31" from "three one" merged)
-    // Only split if it looks like a valid score (single digit followed by single/double digit)
-    // Pattern: 2-digit number where first digit is 0-9 and could be a score
-    result = result.replace(/^(\d)(\d{1,2})$/, '$1-$2');
+    // Handle special case: "221" from "two to one" where "to" was recognized as "2"
+    // Pattern: 3 digits where middle is "2" (from "to") - convert to first-last
+    // e.g., "221" -> "2-1", "321" -> "3-1", "621" -> "6-1"
+    if (/^\d2\d$/.test(result)) {
+        result = result.charAt(0) + '-' + result.charAt(2);
+    }
+
+    // Handle 2-digit scores without separator (e.g., "31" from "three one")
+    // Only apply if no separator already exists
+    if (/^\d{2}$/.test(result) && !result.includes('-')) {
+        result = result.charAt(0) + '-' + result.charAt(1);
+    }
+
+    // Handle 3-digit scores like "621" (6-21 in badminton/table tennis tiebreak)
+    // But only if not already processed above
+    if (/^\d{3}$/.test(result) && !result.includes('-')) {
+        // Assume format is X-YY (single digit vs double digit)
+        result = result.charAt(0) + '-' + result.substring(1);
+    }
 
     // Clean up any remaining whitespace
     result = result.trim();
