@@ -421,6 +421,11 @@ function searchPlayerByVoice(spokenName) {
 /**
  * Convert spoken numbers to digits
  * Handles Portuguese, English and Japanese number words
+ *
+ * Supported formats:
+ * - Portuguese: "três a um" → "3-1", "vinte e um a dezenove" → "21-19"
+ * - English: "three one" or "three to one" → "3-1" (without "to" is more reliable)
+ * - Japanese: "三対一" or "さん たい いち" → "3-1"
  */
 function convertSpokenNumbersToDigits(text) {
     const numberWords = {
@@ -436,14 +441,23 @@ function convertSpokenNumbersToDigits(text) {
         'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14', 'fifteen': '15',
         'sixteen': '16', 'seventeen': '17', 'eighteen': '18', 'nineteen': '19', 'twenty': '20',
         'twenty one': '21', 'twenty-one': '21',
-        // Japanese
+        // Japanese (kanji)
         'ゼロ': '0', '零': '0', '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
         '六': '6', '七': '7', '八': '8', '九': '9', '十': '10',
-        'いち': '1', 'に': '2', 'さん': '3', 'よん': '4', 'ご': '5',
-        'ろく': '6', 'なな': '7', 'はち': '8', 'きゅう': '9', 'じゅう': '10'
+        // Japanese (hiragana)
+        'いち': '1', 'に': '2', 'さん': '3', 'し': '4', 'よん': '4', 'ご': '5',
+        'ろく': '6', 'しち': '7', 'なな': '7', 'はち': '8', 'きゅう': '9', 'く': '9', 'じゅう': '10'
     };
 
     let result = text.toLowerCase();
+
+    // Pre-process: Handle Japanese separator "たい" (tai) before number conversion
+    result = result.replace(/\s*たい\s*/g, ' TAI_SEPARATOR ');
+
+    // Pre-process: Handle separators BEFORE converting numbers
+    // This prevents "to" from being confused with "two"
+    // English: " to " -> separator (but be careful not to match "two")
+    result = result.replace(/\s+to\s+/gi, ' TO_SEPARATOR ');
 
     // Sort by length descending to match longer phrases first (e.g., "vinte e um" before "um")
     const sortedWords = Object.keys(numberWords).sort((a, b) => b.length - a.length);
@@ -453,14 +467,25 @@ function convertSpokenNumbersToDigits(text) {
         result = result.replace(regex, numberWords[word]);
     }
 
-    // Clean up common separators: "a" -> "-", "to" -> "-", "対" -> "-"
+    // Now convert separators to "-"
+    result = result.replace(/\s*TO_SEPARATOR\s*/g, '-');
+    result = result.replace(/\s*TAI_SEPARATOR\s*/g, '-');
+
+    // Clean up common separators: "a" -> "-", "対" -> "-", "x" -> "-"
     result = result.replace(/\s+a\s+/gi, '-');
-    result = result.replace(/\s+to\s+/gi, '-');
     result = result.replace(/\s*対\s*/g, '-');
     result = result.replace(/\s+x\s+/gi, '-');
 
-    // Clean up extra spaces around numbers
-    result = result.replace(/(\d)\s+(\d)/g, '$1-$2');
+    // Handle consecutive digits with space: "3 1" -> "3-1"
+    result = result.replace(/(\d+)\s+(\d+)/g, '$1-$2');
+
+    // Handle consecutive digits without space (e.g., "31" from "three one" merged)
+    // Only split if it looks like a valid score (single digit followed by single/double digit)
+    // Pattern: 2-digit number where first digit is 0-9 and could be a score
+    result = result.replace(/^(\d)(\d{1,2})$/, '$1-$2');
+
+    // Clean up any remaining whitespace
+    result = result.trim();
 
     return result;
 }
