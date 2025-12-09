@@ -41,7 +41,8 @@
     "nav": {
         "home": "🏠 Home",
         "games": "📊 History",
-        "charts": "📈 Charts"
+        "charts": "📈 Charts",
+        "achievements": "🏆 Achievements"
     },
     "sports": {
         "tableTennis": {
@@ -386,9 +387,6 @@
         "requestSponsorship": "Request Sponsorship",
         "sponsorNote": "By clicking \"Request Sponsorship\", you will be directed to fill out a form. We will contact you within 24 hours!",
         "support": "🤝 Support"
-    },
-    "nav": {
-        "achievements": "🏆 Achievements"
     },
     "achievements": {
         "title": "Achievements",

@@ -41,7 +41,8 @@
     "nav": {
         "home": "🏠 Início",
         "games": "📊 Histórico",
-        "charts": "📈 Gráficos"
+        "charts": "📈 Gráficos",
+        "achievements": "🏆 Conquistas"
     },
     "sports": {
         "tableTennis": {
@@ -386,9 +387,6 @@
         "requestSponsorship": "Solicitar Patrocínio",
         "sponsorNote": "Ao clicar em \"Solicitar Patrocínio\", você será direcionado para preencher um formulário. Entraremos em contato em até 24 horas!",
         "support": "🤝 Apoiar"
-    },
-    "nav": {
-        "achievements": "🏆 Conquistas"
     },
     "achievements": {
         "title": "Conquistas",
