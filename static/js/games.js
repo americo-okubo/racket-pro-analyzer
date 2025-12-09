@@ -1443,24 +1443,73 @@ function getStreakDisplay(stats) {
     return streakHtml;
 }
 
-// Calculate trend using linear regression
+// Calculate trend based on last 3 games
 function calculateTrend(playerGames) {
-    if (playerGames.length < 4) {
-        return { trend: null, trendDirection: null, slope: null };
+    if (playerGames.length < 3) {
+        return { trend: null, trendDirection: null };
     }
 
-    // Sort by date ascending (oldest first) for regression
+    // Sort by date descending (most recent first)
+    const sortedGames = [...playerGames].sort((a, b) => b.game_date.localeCompare(a.game_date));
+
+    // Analyze last 3 games
+    const last3 = sortedGames.slice(0, 3);
+    const winsInLast3 = last3.filter(g => g.result === 'win').length;
+    const lastGameWon = last3[0].result === 'win';
+
+    let trend = null;
+    let trendDirection = null;
+
+    // Logic:
+    // 3 wins → Improving
+    // 2 wins + last win → Improving
+    // 2 wins + last loss → Stable
+    // 1 win + last win → Stable
+    // 1 win + last loss → Declining
+    // 0 wins → Declining
+
+    if (winsInLast3 === 3) {
+        trendDirection = 'up';
+        trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')}</span>`;
+    } else if (winsInLast3 === 2) {
+        if (lastGameWon) {
+            trendDirection = 'up';
+            trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')}</span>`;
+        } else {
+            trendDirection = 'stable';
+            trend = `<span class="trend trend-stable">→ ${t('analytics.stable', 'Estável')}</span>`;
+        }
+    } else if (winsInLast3 === 1) {
+        if (lastGameWon) {
+            trendDirection = 'stable';
+            trend = `<span class="trend trend-stable">→ ${t('analytics.stable', 'Estável')}</span>`;
+        } else {
+            trendDirection = 'down';
+            trend = `<span class="trend trend-down">↘️ ${t('analytics.declining', 'Piorando')}</span>`;
+        }
+    } else {
+        trendDirection = 'down';
+        trend = `<span class="trend trend-down">↘️ ${t('analytics.declining', 'Piorando')}</span>`;
+    }
+
+    return { trend, trendDirection };
+}
+
+// Calculate linear regression for chart display
+function calculateLinearRegression(playerGames) {
+    if (playerGames.length < 2) {
+        return null;
+    }
+
+    // Sort by date ascending (oldest first)
     const sortedGames = [...playerGames].sort((a, b) => a.game_date.localeCompare(b.game_date));
 
-    // Linear regression on win/loss results
-    // x = game index (1, 2, 3, ...)
-    // y = result (1 = win, 0 = loss)
     const n = sortedGames.length;
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
 
     sortedGames.forEach((game, index) => {
         const x = index + 1;
-        const y = game.result === 'win' ? 1 : 0;
+        const y = game.result === 'win' ? 1 : -1; // 1 for win, -1 for loss (matches chart)
         sumX += x;
         sumY += y;
         sumXY += x * y;
@@ -1468,28 +1517,15 @@ function calculateTrend(playerGames) {
     });
 
     // slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX^2)
+    // intercept = (sumY - slope*sumX) / n
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
 
-    // Slope = change in win probability per game
-    // Multiply by 100 for percentage points per game
-    const slopePercent = slope * 100;
+    // Calculate start and end points for the regression line
+    const startY = intercept + slope * 1;
+    const endY = intercept + slope * n;
 
-    let trend = null;
-    let trendDirection = null;
-
-    // Threshold: ~2% change per game is significant
-    if (slopePercent >= 2) {
-        trendDirection = 'up';
-        trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')}</span>`;
-    } else if (slopePercent <= -2) {
-        trendDirection = 'down';
-        trend = `<span class="trend trend-down">↘️ ${t('analytics.declining', 'Piorando')}</span>`;
-    } else {
-        trendDirection = 'stable';
-        trend = `<span class="trend trend-stable">→ ${t('analytics.stable', 'Estável')}</span>`;
-    }
-
-    return { trend, trendDirection, slope: slopePercent };
+    return { slope, intercept, startY, endY, n };
 }
 
 // =============================================================================
@@ -2057,17 +2093,38 @@ function renderSinglesPlayerHistory() {
     const data = playerGames.map(g => g.result === 'win' ? 1 : -1);
     const colors = playerGames.map(g => g.result === 'win' ? '#27ae60' : '#e74c3c');
 
+    // Calculate linear regression for trend line
+    const regression = calculateLinearRegression(playerGames);
+    const regressionData = regression ?
+        playerGames.map((_, index) => regression.intercept + regression.slope * (index + 1)) :
+        [];
+
     charts.singlesHistory = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
-            datasets: [{
-                label: t('analytics.result', 'Resultado'),
-                data: data,
-                backgroundColor: colors,
-                borderRadius: 4,
-                gameData: playerGames // Store game data for tooltip
-            }]
+            datasets: [
+                {
+                    label: t('analytics.result', 'Resultado'),
+                    data: data,
+                    backgroundColor: colors,
+                    borderRadius: 4,
+                    gameData: playerGames, // Store game data for tooltip
+                    order: 1
+                },
+                {
+                    label: t('analytics.trendLine', 'Tendência'),
+                    data: regressionData,
+                    type: 'line',
+                    borderColor: '#3498db',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    order: 0
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -2087,6 +2144,9 @@ function renderSinglesPlayerHistory() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    filter: function(tooltipItem) {
+                        return tooltipItem.datasetIndex === 0; // Only show tooltip for bar chart
+                    },
                     callbacks: {
                         title: function(context) {
                             const game = playerGames[context[0].dataIndex];
@@ -2211,16 +2271,37 @@ function renderDoublesPartnerHistory() {
     const data = partnerGames.map(g => g.result === 'win' ? 1 : -1);
     const colors = partnerGames.map(g => g.result === 'win' ? '#27ae60' : '#e74c3c');
 
+    // Calculate linear regression for trend line
+    const regression = calculateLinearRegression(partnerGames);
+    const regressionData = regression ?
+        partnerGames.map((_, index) => regression.intercept + regression.slope * (index + 1)) :
+        [];
+
     charts.doublesPartnerHistory = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
-            datasets: [{
-                label: t('analytics.result', 'Resultado'),
-                data: data,
-                backgroundColor: colors,
-                borderRadius: 4
-            }]
+            datasets: [
+                {
+                    label: t('analytics.result', 'Resultado'),
+                    data: data,
+                    backgroundColor: colors,
+                    borderRadius: 4,
+                    order: 1
+                },
+                {
+                    label: t('analytics.trendLine', 'Tendência'),
+                    data: regressionData,
+                    type: 'line',
+                    borderColor: '#3498db',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    order: 0
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -2240,6 +2321,9 @@ function renderDoublesPartnerHistory() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    filter: function(tooltipItem) {
+                        return tooltipItem.datasetIndex === 0;
+                    },
                     callbacks: {
                         title: function(context) {
                             const game = partnerGames[context[0].dataIndex];
@@ -2363,16 +2447,37 @@ function renderDoublesOpponentHistory() {
     const data = opponentGames.map(g => g.result === 'win' ? 1 : -1);
     const colors = opponentGames.map(g => g.result === 'win' ? '#27ae60' : '#e74c3c');
 
+    // Calculate linear regression for trend line
+    const regression = calculateLinearRegression(opponentGames);
+    const regressionData = regression ?
+        opponentGames.map((_, index) => regression.intercept + regression.slope * (index + 1)) :
+        [];
+
     charts.doublesOpponentHistory = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
-            datasets: [{
-                label: t('analytics.result', 'Resultado'),
-                data: data,
-                backgroundColor: colors,
-                borderRadius: 4
-            }]
+            datasets: [
+                {
+                    label: t('analytics.result', 'Resultado'),
+                    data: data,
+                    backgroundColor: colors,
+                    borderRadius: 4,
+                    order: 1
+                },
+                {
+                    label: t('analytics.trendLine', 'Tendência'),
+                    data: regressionData,
+                    type: 'line',
+                    borderColor: '#3498db',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0,
+                    order: 0
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -2392,6 +2497,9 @@ function renderDoublesOpponentHistory() {
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    filter: function(tooltipItem) {
+                        return tooltipItem.datasetIndex === 0;
+                    },
                     callbacks: {
                         title: function(context) {
                             const game = opponentGames[context[0].dataIndex];

@@ -217,6 +217,7 @@
         "selectToViewHistory": "Select an opponent to view history",
         "selectPartnerToViewHistory": "Select a partner to view history",
         "result": "Result",
+        "trendLine": "Trend",
         "overallEvolution": "Overall Evolution",
         "historyWithPartner": "📊 History with Partner",
         "historyAgainstOpponent": "📊 History vs Opponent",
