@@ -293,10 +293,16 @@ header {
 }
 
 .sport-icon-header {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    object-position: center 35%;
     vertical-align: middle;
+    border-radius: 6px;
+    /* Clip to hide outer border and text from sport icons */
+    clip-path: inset(8% 8% 25% 8%);
+    transform: scale(1.4);
+    margin-right: 4px;
 }
 
 .sport-card h3 {
