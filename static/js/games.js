@@ -42,6 +42,50 @@ function getVersusLabel() {
 }
 
 // =============================================================================
+// CUSTOM CONFIRM DIALOG
+// =============================================================================
+
+function showConfirmDialog(message) {
+    return new Promise((resolve) => {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'confirm-overlay';
+        overlay.innerHTML = `
+            <div class="confirm-dialog">
+                <p class="confirm-message">${message}</p>
+                <div class="confirm-buttons">
+                    <button class="confirm-btn confirm-cancel">${t('common.cancel', 'Cancelar')}</button>
+                    <button class="confirm-btn confirm-ok">${t('common.confirm', 'OK')}</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Focus OK button
+        overlay.querySelector('.confirm-ok').focus();
+
+        // Handle clicks
+        overlay.querySelector('.confirm-cancel').onclick = () => {
+            overlay.remove();
+            resolve(false);
+        };
+        overlay.querySelector('.confirm-ok').onclick = () => {
+            overlay.remove();
+            resolve(true);
+        };
+
+        // Handle escape key
+        overlay.onkeydown = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                resolve(false);
+            }
+        };
+    });
+}
+
+// =============================================================================
 // INITIALIZATION
 // =============================================================================
 
@@ -403,7 +447,8 @@ function editPlayer(playerId) {
 }
 
 async function deletePlayer(playerId) {
-    if (!confirm('Tem certeza que deseja excluir este jogador?')) return;
+    const confirmed = await showConfirmDialog(t('players.confirmDelete', 'Tem certeza que deseja excluir este jogador?'));
+    if (!confirmed) return;
 
     try {
         await apiRequest(`/api/players/${playerId}`, { method: 'DELETE' });
@@ -1094,7 +1139,8 @@ async function saveGame(event) {
 }
 
 async function deleteGame(gameId) {
-    if (!confirm('Tem certeza que deseja excluir este jogo?')) return;
+    const confirmed = await showConfirmDialog(t('games.confirmDelete', 'Tem certeza que deseja excluir este jogo?'));
+    if (!confirmed) return;
 
     try {
         await apiRequest(`/api/games/${gameId}`, { method: 'DELETE' });
