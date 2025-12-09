@@ -1452,6 +1452,12 @@ function calculateTrend(playerGames) {
     // Sort by date descending (most recent first)
     const sortedGames = [...playerGames].sort((a, b) => b.game_date.localeCompare(a.game_date));
 
+    // Check current streak (last 3 games)
+    const last3Games = sortedGames.slice(0, 3);
+    const last3Wins = last3Games.filter(g => g.result === 'win').length;
+    const onWinStreak = last3Wins === 3;
+    const onLossStreak = last3Wins === 0;
+
     // Split into recent (last 50%) and older (first 50%)
     const midpoint = Math.floor(sortedGames.length / 2);
     const recentGames = sortedGames.slice(0, midpoint);
@@ -1469,7 +1475,16 @@ function calculateTrend(playerGames) {
     let trend = null;
     let trendDirection = null;
 
-    if (difference >= 15) {
+    // Priority: current streak overrides statistical trend when they conflict
+    if (onWinStreak) {
+        // On a winning streak - show improving or stable, never declining
+        trendDirection = 'up';
+        trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')}</span>`;
+    } else if (onLossStreak) {
+        // On a losing streak - show declining or stable, never improving
+        trendDirection = 'down';
+        trend = `<span class="trend trend-down">↘️ ${t('analytics.declining', 'Piorando')}</span>`;
+    } else if (difference >= 15) {
         trendDirection = 'up';
         trend = `<span class="trend trend-up">↗️ ${t('analytics.improving', 'Melhorando')} (+${difference}%)</span>`;
     } else if (difference <= -15) {
