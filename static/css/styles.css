@@ -108,6 +108,44 @@ header {
     body:not(.index-page) .user-info {
         display: none;
     }
+
+    /* Reorganize header on mobile for index page */
+    body.index-page .header-actions {
+        gap: 8px;
+    }
+
+    body.index-page .language-selector {
+        gap: 4px;
+    }
+
+    body.index-page .language-flag {
+        width: 24px;
+        height: 24px;
+    }
+
+    body.index-page .btn-help {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9em;
+        flex-shrink: 0;
+    }
+
+    body.index-page .user-info {
+        gap: 6px;
+        font-size: 0.8em;
+    }
+
+    body.index-page .user-info #userEmail {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    body.index-page .user-info .btn-secondary {
+        padding: 6px 10px;
+        font-size: 0.85em;
+    }
 }
 
 /* =============================================================================
