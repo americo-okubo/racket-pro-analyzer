@@ -419,6 +419,53 @@ function searchPlayerByVoice(spokenName) {
 }
 
 /**
+ * Convert spoken numbers to digits
+ * Handles Portuguese, English and Japanese number words
+ */
+function convertSpokenNumbersToDigits(text) {
+    const numberWords = {
+        // Portuguese
+        'zero': '0', 'um': '1', 'uma': '1', 'dois': '2', 'duas': '2', 'três': '3', 'tres': '3',
+        'quatro': '4', 'cinco': '5', 'seis': '6', 'sete': '7', 'oito': '8', 'nove': '9',
+        'dez': '10', 'onze': '11', 'doze': '12', 'treze': '13', 'quatorze': '14', 'catorze': '14',
+        'quinze': '15', 'dezesseis': '16', 'dezessete': '17', 'dezoito': '18', 'dezenove': '19',
+        'vinte': '20', 'vinte e um': '21', 'vinte e uma': '21',
+        // English
+        'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+        'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
+        'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14', 'fifteen': '15',
+        'sixteen': '16', 'seventeen': '17', 'eighteen': '18', 'nineteen': '19', 'twenty': '20',
+        'twenty one': '21', 'twenty-one': '21',
+        // Japanese
+        'ゼロ': '0', '零': '0', '一': '1', '二': '2', '三': '3', '四': '4', '五': '5',
+        '六': '6', '七': '7', '八': '8', '九': '9', '十': '10',
+        'いち': '1', 'に': '2', 'さん': '3', 'よん': '4', 'ご': '5',
+        'ろく': '6', 'なな': '7', 'はち': '8', 'きゅう': '9', 'じゅう': '10'
+    };
+
+    let result = text.toLowerCase();
+
+    // Sort by length descending to match longer phrases first (e.g., "vinte e um" before "um")
+    const sortedWords = Object.keys(numberWords).sort((a, b) => b.length - a.length);
+
+    for (const word of sortedWords) {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        result = result.replace(regex, numberWords[word]);
+    }
+
+    // Clean up common separators: "a" -> "-", "to" -> "-", "対" -> "-"
+    result = result.replace(/\s+a\s+/gi, '-');
+    result = result.replace(/\s+to\s+/gi, '-');
+    result = result.replace(/\s*対\s*/g, '-');
+    result = result.replace(/\s+x\s+/gi, '-');
+
+    // Clean up extra spaces around numbers
+    result = result.replace(/(\d)\s+(\d)/g, '$1-$2');
+
+    return result;
+}
+
+/**
  * Simple string similarity
  */
 function calculateSimilarity(str1, str2) {
@@ -995,8 +1042,10 @@ function processVoiceGameInput(step, transcript) {
                 setResponse(getVoiceGameText('step5_skipped'));
                 setTimeout(() => runVoiceGameStep(6), 1500);
             } else {
-                voiceGameEntry.gameData.score = transcript;
-                setResponse(getVoiceGameText('step5_confirmed').replace('{score}', transcript));
+                // Convert spoken numbers to digits (e.g., "dois a quatro" -> "2-4")
+                const convertedScore = convertSpokenNumbersToDigits(transcript);
+                voiceGameEntry.gameData.score = convertedScore;
+                setResponse(getVoiceGameText('step5_confirmed').replace('{score}', convertedScore));
                 setTimeout(() => runVoiceGameStep(6), 1500);
             }
             break;
