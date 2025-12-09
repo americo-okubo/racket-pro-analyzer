@@ -172,6 +172,8 @@
         "winRatePct": "Taxa de Vitória (%)",
         "winsInRow": "vitórias seguidas!",
         "lossesInRow": "derrotas seguidas",
+        "winStreakLegend": "Vitórias consecutivas",
+        "lossStreakLegend": "Derrotas consecutivas",
         "lastWinGamesAgo": "Última vitória: há",
         "game": "jogo",
         "games": "jogos",

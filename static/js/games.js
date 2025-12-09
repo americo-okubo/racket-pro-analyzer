@@ -2788,9 +2788,9 @@ function renderEvolutionChart() {
             },
             scales: {
                 y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: { display: true, text: t('analytics.ratePct', 'Taxa (%)') }
+                    min: -5,
+                    max: 105,
+                    title: { display: true, text: t('analytics.winRatePct', 'Taxa de Vitória (%)') }
                 },
                 x: { title: { display: true, text: t('analytics.date', 'Data') } }
             },
@@ -2860,17 +2860,30 @@ function renderStreakChart() {
     const data = streakData.map(d => d.streak);
     const colors = data.map(v => v > 0 ? '#27ae60' : '#e74c3c');
 
+    // Separate data into wins and losses for proper legend
+    const winData = data.map(v => v > 0 ? v : null);
+    const lossData = data.map(v => v < 0 ? v : null);
+
     charts.streak = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
-            datasets: [{
-                label: t('analytics.currentStreak', 'Sequência Atual'),
-                data,
-                backgroundColor: colors,
-                borderColor: colors,
-                borderWidth: 1
-            }]
+            datasets: [
+                {
+                    label: t('analytics.winStreakLegend', 'Vitórias consecutivas'),
+                    data: winData,
+                    backgroundColor: '#27ae60',
+                    borderColor: '#27ae60',
+                    borderWidth: 1
+                },
+                {
+                    label: t('analytics.lossStreakLegend', 'Derrotas consecutivas'),
+                    data: lossData,
+                    backgroundColor: '#e74c3c',
+                    borderColor: '#e74c3c',
+                    borderWidth: 1
+                }
+            ]
         },
         options: {
             responsive: true,

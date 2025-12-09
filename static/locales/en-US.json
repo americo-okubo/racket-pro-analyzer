@@ -172,6 +172,8 @@
         "winRatePct": "Win Rate (%)",
         "winsInRow": "wins in a row!",
         "lossesInRow": "losses in a row",
+        "winStreakLegend": "Consecutive wins",
+        "lossStreakLegend": "Consecutive losses",
         "lastWinGamesAgo": "Last win:",
         "game": "game ago",
         "games": "games ago",

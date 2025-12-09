@@ -172,6 +172,8 @@
         "winRatePct": "勝率 (%)",
         "winsInRow": "連勝中！",
         "lossesInRow": "連敗中",
+        "winStreakLegend": "連勝",
+        "lossStreakLegend": "連敗",
         "lastWinGamesAgo": "最後の勝利:",
         "game": "試合前",
         "games": "試合前",
