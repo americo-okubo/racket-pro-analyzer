@@ -645,6 +645,18 @@ function renderGamesList() {
     }).join('');
 }
 
+// Helper function to format W/L record according to language
+function formatWinLoss(wins, losses) {
+    const lang = (typeof i18n !== 'undefined' && i18n.currentLanguage) ? i18n.currentLanguage : 'pt-BR';
+
+    if (lang.startsWith('ja')) {
+        return `${wins}勝${losses}敗`;
+    } else if (lang.startsWith('en')) {
+        return `${wins}W/${losses}L`;
+    }
+    return `${wins}V/${losses}D`;
+}
+
 function viewGameDetails(gameId) {
     const game = games.find(g => g.id === gameId);
     if (!game) return;
@@ -659,12 +671,13 @@ function viewGameDetails(gameId) {
     const partnerName = partner ? partner.name : '';
 
     const resultClass = game.result === 'win' ? 'win' : 'loss';
-    const resultText = game.result === 'win' ? t('stats.win', 'Vitória') : t('stats.loss', 'Derrota');
+    const resultText = game.result === 'win' ? t('games.win', 'Vitória') : t('games.loss', 'Derrota');
 
     // Get head-to-head stats against opponent
     const h2hGames = games.filter(g => g.opponent_id === game.opponent_id);
     const h2hWins = h2hGames.filter(g => g.result === 'win').length;
     const h2hTotal = h2hGames.length;
+    const h2hLosses = h2hTotal - h2hWins;
     const h2hRate = h2hTotal > 0 ? Math.round((h2hWins / h2hTotal) * 100) : 0;
 
     let content = `
@@ -698,7 +711,7 @@ function viewGameDetails(gameId) {
             <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border-color);">
             <div class="game-detail-row">
                 <span class="detail-label">${t('analytics.h2hVs', 'Histórico vs')} ${opponentName}:</span>
-                <span class="detail-value">${h2hWins}V/${h2hTotal - h2hWins}D (${h2hRate}%)</span>
+                <span class="detail-value">${formatWinLoss(h2hWins, h2hTotal - h2hWins)} (${h2hRate}%)</span>
             </div>
         </div>
     `;
@@ -1267,8 +1280,11 @@ function formatDateLabel(dateStr) {
     const date = new Date(dateStr + 'T00:00:00');
 
     if (lang.startsWith('ja')) {
-        // Japanese format: YYYY/MM/DD
-        return date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
+        // Japanese format: YYYY年MM月DD日
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        return `${year}年${month}月${day}日`;
     } else if (lang.startsWith('en')) {
         // English format: MM/DD/YY
         return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
@@ -3256,8 +3272,11 @@ function formatDate(dateStr) {
     const date = new Date(dateStr + 'T00:00:00');
 
     if (lang.startsWith('ja')) {
-        // Japanese format: YYYY/MM/DD
-        return date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
+        // Japanese format: YYYY年MM月DD日
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        return `${year}年${month}月${day}日`;
     } else if (lang.startsWith('en')) {
         // English format: MM/DD/YY
         return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
