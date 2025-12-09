@@ -386,5 +386,67 @@
         "requestSponsorship": "Solicitar Patrocínio",
         "sponsorNote": "Ao clicar em \"Solicitar Patrocínio\", você será direcionado para preencher um formulário. Entraremos em contato em até 24 horas!",
         "support": "🤝 Apoiar"
+    },
+    "nav": {
+        "achievements": "🏆 Conquistas"
+    },
+    "achievements": {
+        "title": "Conquistas",
+        "nextTitle": "🔒 Próximas Conquistas",
+        "congratulations": "🎉 PARABÉNS! 🎉",
+        "continue": "Continuar",
+        "keepPlaying": "Continue jogando para desbloquear!",
+        "names": {
+            "first_step": "Primeiro Passo",
+            "getting_started": "Começando",
+            "quarter_century": "Quarto de Século",
+            "half_century": "Meio Século",
+            "century": "Centenário",
+            "veteran": "Veterano",
+            "master": "Mestre",
+            "legend": "Lenda Viva",
+            "on_fire_3": "Pegando Fogo",
+            "on_fire_7": "Em Chamas",
+            "eternal_flame": "Chama Eterna",
+            "immortal": "Imortal",
+            "networking": "Networking",
+            "socializer": "Socializador",
+            "popular": "Popular",
+            "first_victory": "Primeira Vitória",
+            "champion": "Campeão",
+            "dominator": "Dominador",
+            "rising_star": "Estrela em Ascensão",
+            "unstoppable": "Imparável"
+        },
+        "descriptions": {
+            "first_step": "Registrou seu primeiro jogo!",
+            "getting_started": "Registrou 10 jogos",
+            "quarter_century": "Registrou 25 jogos",
+            "half_century": "Registrou 50 jogos",
+            "century": "Registrou 100 jogos",
+            "veteran": "Registrou 250 jogos",
+            "master": "Registrou 500 jogos",
+            "legend": "Registrou 1000 jogos",
+            "on_fire_3": "Jogou 3 dias seguidos",
+            "on_fire_7": "Jogou 7 dias seguidos",
+            "eternal_flame": "Jogou 30 dias seguidos",
+            "immortal": "Jogou 90 dias seguidos",
+            "networking": "Enfrentou 5 adversários diferentes",
+            "socializer": "Enfrentou 10 adversários diferentes",
+            "popular": "Enfrentou 25 adversários diferentes",
+            "first_victory": "Conquistou sua primeira vitória!",
+            "champion": "Conquistou 50 vitórias",
+            "dominator": "Conquistou 100 vitórias",
+            "rising_star": "60% de vitórias com pelo menos 20 jogos",
+            "unstoppable": "70% de vitórias com pelo menos 50 jogos"
+        },
+        "rarity": {
+            "common": "⚪ Comum",
+            "uncommon": "🟢 Incomum",
+            "rare": "🔵 Raro",
+            "epic": "🟣 Épico",
+            "legendary": "🟠 Lendário",
+            "mythic": "🔴 Mítico"
+        }
     }
 }

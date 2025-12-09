@@ -197,6 +197,23 @@ header {
     border-bottom-color: #7c3aed;
 }
 
+/* Highlight Achievements tab */
+.main-nav a.nav-achievements {
+    color: #f5af19;
+    font-weight: 700;
+}
+
+.main-nav a.nav-achievements:hover {
+    color: #e09800;
+    background: rgba(245, 175, 25, 0.1);
+    border-bottom-color: #f5af19;
+}
+
+.achievements-nav-count {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
 /* =============================================================================
    Language Selector
    ============================================================================= */

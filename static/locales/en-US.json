@@ -386,5 +386,67 @@
         "requestSponsorship": "Request Sponsorship",
         "sponsorNote": "By clicking \"Request Sponsorship\", you will be directed to fill out a form. We will contact you within 24 hours!",
         "support": "🤝 Support"
+    },
+    "nav": {
+        "achievements": "🏆 Achievements"
+    },
+    "achievements": {
+        "title": "Achievements",
+        "nextTitle": "🔒 Next Achievements",
+        "congratulations": "🎉 CONGRATULATIONS! 🎉",
+        "continue": "Continue",
+        "keepPlaying": "Keep playing to unlock!",
+        "names": {
+            "first_step": "First Step",
+            "getting_started": "Getting Started",
+            "quarter_century": "Quarter Century",
+            "half_century": "Half Century",
+            "century": "Century",
+            "veteran": "Veteran",
+            "master": "Master",
+            "legend": "Living Legend",
+            "on_fire_3": "On Fire",
+            "on_fire_7": "Blazing",
+            "eternal_flame": "Eternal Flame",
+            "immortal": "Immortal",
+            "networking": "Networking",
+            "socializer": "Socializer",
+            "popular": "Popular",
+            "first_victory": "First Victory",
+            "champion": "Champion",
+            "dominator": "Dominator",
+            "rising_star": "Rising Star",
+            "unstoppable": "Unstoppable"
+        },
+        "descriptions": {
+            "first_step": "Registered your first game!",
+            "getting_started": "Registered 10 games",
+            "quarter_century": "Registered 25 games",
+            "half_century": "Registered 50 games",
+            "century": "Registered 100 games",
+            "veteran": "Registered 250 games",
+            "master": "Registered 500 games",
+            "legend": "Registered 1000 games",
+            "on_fire_3": "Played 3 days in a row",
+            "on_fire_7": "Played 7 days in a row",
+            "eternal_flame": "Played 30 days in a row",
+            "immortal": "Played 90 days in a row",
+            "networking": "Faced 5 different opponents",
+            "socializer": "Faced 10 different opponents",
+            "popular": "Faced 25 different opponents",
+            "first_victory": "Won your first game!",
+            "champion": "Won 50 games",
+            "dominator": "Won 100 games",
+            "rising_star": "60% win rate with at least 20 games",
+            "unstoppable": "70% win rate with at least 50 games"
+        },
+        "rarity": {
+            "common": "⚪ Common",
+            "uncommon": "🟢 Uncommon",
+            "rare": "🔵 Rare",
+            "epic": "🟣 Epic",
+            "legendary": "🟠 Legendary",
+            "mythic": "🔴 Mythic"
+        }
     }
 }

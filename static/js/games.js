@@ -1132,6 +1132,11 @@ async function saveGame(event) {
         await loadPlayers(); // Refresh player stats
 
         closeModal('newGameModal');
+
+        // Check for new achievements after saving game
+        if (window.gamification && window.gamification.checkAchievementsAfterGame) {
+            window.gamification.checkAchievementsAfterGame();
+        }
     } catch (error) {
         console.error('Erro ao salvar jogo:', error);
         alert('Erro ao salvar jogo: ' + error.message);

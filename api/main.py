@@ -778,6 +778,13 @@ async def create_game(game: GameCreate, user_id: int = Depends(verify_token)):
     # Save to Cloud Storage
     save_to_cloud()
 
+    # Update streak for gamification
+    try:
+        from api.database import update_user_streak
+        update_user_streak(user_id, game.game_date)
+    except Exception as e:
+        print(f"[API] Error updating streak: {e}")
+
     return new_game
 
 
@@ -981,6 +988,51 @@ async def serve_manifest():
     if os.path.exists(manifest_path):
         return FileResponse(manifest_path)
     raise HTTPException(status_code=404, detail="Manifest não encontrado")
+
+
+# =============================================================================
+# GAMIFICATION ENDPOINTS (Achievements System)
+# =============================================================================
+
+@app.get("/api/gamification/achievements")
+async def get_achievements(current_user: dict = Depends(get_current_user)):
+    """Get all achievements with user's unlock status."""
+    try:
+        from api.database import get_user_achievements
+        achievements = get_user_achievements(current_user["id"])
+        return {"success": True, "achievements": achievements}
+    except Exception as e:
+        print(f"[API] Error getting achievements: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/gamification/streak")
+async def get_streak(current_user: dict = Depends(get_current_user)):
+    """Get user's streak information."""
+    try:
+        from api.database import get_user_streak
+        streak = get_user_streak(current_user["id"])
+        return {"success": True, "streak": streak}
+    except Exception as e:
+        print(f"[API] Error getting streak: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/gamification/check-achievements")
+async def check_achievements(current_user: dict = Depends(get_current_user)):
+    """Check and unlock any new achievements for user."""
+    try:
+        from api.database import check_and_unlock_achievements, get_user_streak
+        newly_unlocked = check_and_unlock_achievements(current_user["id"])
+        streak = get_user_streak(current_user["id"])
+        return {
+            "success": True,
+            "newly_unlocked": newly_unlocked,
+            "streak": streak
+        }
+    except Exception as e:
+        print(f"[API] Error checking achievements: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

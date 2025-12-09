@@ -8,6 +8,7 @@
     <title>Histórico de Jogos - Racket Pro Analyzer</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/gamification.css">
     <link rel="icon" type="image/png" href="/static/images/icon-192.png">
 
     <!-- Chart.js (local fallback) -->
@@ -48,6 +49,8 @@
     <nav class="main-nav">
         <a href="#" class="active"><span data-i18n="nav.games">📊 Histórico</span></a>
         <a href="#" onclick="openAnalyticsModal()"><span data-i18n="nav.charts">📈 Gráficos</span></a>
+        <a href="#" onclick="openAchievementsModal()" class="nav-achievements"><span data-i18n="nav.achievements">🏆 Conquistas</span> <span id="achievementsCount" class="achievements-nav-count">(0)</span></a>
+        <span id="streakBadge" class="streak-badge hidden"></span>
     </nav>
 
     <!-- Main Content -->
@@ -646,9 +649,25 @@
         </div>
     </div>
 
+    <!-- Modal: Achievements -->
+    <div id="achievementsModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>🏆 <span data-i18n="achievements.title">Conquistas</span></h2>
+                <button onclick="closeAchievementsModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="achievementsContainer">
+                    <p style="text-align: center; color: #666;">Carregando conquistas...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="/static/js/sports.js"></script>
     <script src="/static/js/games.js"></script>
     <script src="/static/js/voice-game-entry.js"></script>
+    <script src="/static/js/gamification.js"></script>
 </body>
 </html>
