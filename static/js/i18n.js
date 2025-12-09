@@ -11,6 +11,9 @@ window.i18n = {
         await this.loadTranslations(this.currentLanguage);
         this.applyTranslations();
         this.updateLanguageFlags();
+
+        // Set HTML lang attribute for native elements (like date picker)
+        document.documentElement.lang = this.currentLanguage;
     },
 
     async loadTranslations(lang) {
@@ -35,6 +38,9 @@ window.i18n = {
         await this.loadTranslations(lang);
         this.applyTranslations();
         this.updateLanguageFlags();
+
+        // Update HTML lang attribute for native elements (like date picker)
+        document.documentElement.lang = lang;
 
         // Dispatch custom event for language change
         window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
