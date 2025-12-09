@@ -25,10 +25,8 @@
                     <img src="/static/images/icon-192.png" alt="Logo" class="logo">
                 </a>
                 <h1><img id="sportIcon" src="" alt="" class="sport-icon-header"> <span id="sportName">Esporte</span></h1>
-            </div>
-            <div class="header-actions">
-                <!-- Language Selector -->
-                <div class="language-selector">
+                <!-- Language Selector - inline with sport name -->
+                <div class="language-selector language-selector-header">
                     <div class="language-flag" data-lang="pt-BR" onclick="changeLanguage('pt-BR')" title="Português (Brasil)">
                         <img src="/static/images/flag-br.svg" alt="Português">
                     </div>
@@ -39,19 +37,15 @@
                         <img src="/static/images/flag-jp.svg" alt="日本語">
                     </div>
                 </div>
+            </div>
+            <div class="header-actions">
                 <a href="/donate.html" class="btn-donate" title="Support" data-i18n="donate.support">🤝 Apoiar</a>
-                <button onclick="openHelpModal()" class="btn-help" title="Help">?</button>
-                <div class="user-info">
-                    <span id="userEmail">Carregando...</span>
-                    <button onclick="logout()" class="btn-secondary" data-i18n="common.logout">Sair</button>
-                </div>
             </div>
         </div>
     </header>
 
     <!-- Navigation -->
     <nav class="main-nav">
-        <a href="/index.html"><span data-i18n="nav.home">🏠 Início</span></a>
         <a href="#" class="active"><span data-i18n="nav.games">📊 Histórico</span></a>
         <a href="#" onclick="openAnalyticsModal()"><span data-i18n="nav.charts">📈 Gráficos</span></a>
     </nav>
