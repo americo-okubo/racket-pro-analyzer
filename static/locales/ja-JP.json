@@ -136,7 +136,10 @@
         "addDetailedScore": "セットごとの詳細スコアを追加",
         "fillSetsFirst": "先に上記のセット数を入力してください",
         "totalPoints": "合計ポイント",
-        "pointsDiff": "差"
+        "pointsDiff": "差",
+        "scoreInconsistent": "スコアが一致しません！",
+        "detailedScoreMismatch": "詳細スコアがセットスコアと一致しません。保存しますか？",
+        "detailedScore": "詳細スコア"
     },
     "players": {
         "title": "👥 プレーヤー",

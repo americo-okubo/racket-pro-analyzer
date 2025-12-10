@@ -2185,6 +2185,25 @@ header {
     color: var(--danger-color);
 }
 
+.detailed-score-summary .summary-warning {
+    width: 100%;
+    justify-content: center;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed var(--danger-color);
+}
+
+/* Set win/loss styling for game details */
+.set-win {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.set-loss {
+    color: var(--danger-color);
+    font-weight: 600;
+}
+
 .result-display {
     padding: 12px 16px;
     border-radius: var(--radius-sm);

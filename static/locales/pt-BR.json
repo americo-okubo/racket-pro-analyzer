@@ -136,7 +136,10 @@
         "addDetailedScore": "Adicionar placar detalhado por set",
         "fillSetsFirst": "Preencha o placar em sets acima primeiro",
         "totalPoints": "Total de pontos",
-        "pointsDiff": "Saldo"
+        "pointsDiff": "Saldo",
+        "scoreInconsistent": "Placar inconsistente!",
+        "detailedScoreMismatch": "Os placares detalhados não correspondem ao placar em sets. Deseja salvar mesmo assim?",
+        "detailedScore": "Placar detalhado"
     },
     "players": {
         "title": "👥 Jogadores",

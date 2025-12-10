@@ -702,6 +702,25 @@ function formatWinLoss(wins, losses) {
     return `${wins}V/${losses}D`;
 }
 
+/**
+ * Format detailed score for display (e.g., "11-5,8-11,12-10" -> "11x5, 8x11, 12x10")
+ */
+function formatDetailedScore(detailedScore) {
+    if (!detailedScore) return '-';
+
+    return detailedScore
+        .split(',')
+        .map((set, index) => {
+            const [you, opp] = set.split('-').map(s => s.trim());
+            const isWin = parseInt(you) > parseInt(opp);
+            const setLabel = `Set ${index + 1}: `;
+            const scoreText = `${you}x${opp}`;
+            const icon = isWin ? '✓' : '✗';
+            return `<span class="${isWin ? 'set-win' : 'set-loss'}">${scoreText} ${icon}</span>`;
+        })
+        .join(' | ');
+}
+
 function viewGameDetails(gameId) {
     const game = games.find(g => g.id === gameId);
     if (!game) return;
@@ -749,6 +768,12 @@ function viewGameDetails(gameId) {
                 <span class="detail-label">${t('games.score', 'Placar')}:</span>
                 <span class="detail-value">${game.score || '-'}</span>
             </div>
+            ${game.detailed_score ? `
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.detailedScore', 'Placar detalhado')}:</span>
+                <span class="detail-value">${formatDetailedScore(game.detailed_score)}</span>
+            </div>
+            ` : ''}
             <div class="game-detail-row">
                 <span class="detail-label">${t('games.result', 'Resultado')}:</span>
                 <span class="detail-value result-${resultClass}">${resultText}</span>
@@ -1205,6 +1230,8 @@ function updateDetailedScoreSummary() {
     let totalOpp = 0;
     let filledSets = 0;
     let detailedScores = [];
+    let detailedSetsWon = 0;
+    let detailedSetsLost = 0;
 
     for (let i = 1; i <= totalSets; i++) {
         const youScore = parseInt(document.getElementById(`detailedSetYou${i}`)?.value) || 0;
@@ -1218,6 +1245,13 @@ function updateDetailedScoreSummary() {
             totalOpp += oppScore;
             filledSets++;
             detailedScores.push(`${youScore}-${oppScore}`);
+
+            // Count sets won/lost based on detailed scores
+            if (youScore > oppScore) {
+                detailedSetsWon++;
+            } else if (oppScore > youScore) {
+                detailedSetsLost++;
+            }
         }
     }
 
@@ -1234,7 +1268,17 @@ function updateDetailedScoreSummary() {
         const diffClass = diff > 0 ? 'positive' : (diff < 0 ? 'negative' : '');
         const diffSign = diff > 0 ? '+' : '';
 
+        // Check if detailed scores match the set score
+        const isConsistent = (detailedSetsWon === setsWon && detailedSetsLost === setsLost);
+        const warningHtml = !isConsistent && filledSets === totalSets ? `
+            <div class="summary-item summary-warning">
+                <span class="summary-label" style="color: var(--danger-color);">⚠️ ${t('games.scoreInconsistent', 'Placar inconsistente!')}</span>
+                <span class="summary-value" style="color: var(--danger-color);">${detailedSetsWon}-${detailedSetsLost} ≠ ${setsWon}-${setsLost}</span>
+            </div>
+        ` : '';
+
         summaryContainer.innerHTML = `
+            ${warningHtml}
             <div class="summary-item">
                 <span class="summary-label">${t('games.totalPoints', 'Total de pontos')}:</span>
                 <span class="summary-value">${totalYou} x ${totalOpp}</span>
@@ -1248,6 +1292,43 @@ function updateDetailedScoreSummary() {
     } else {
         summaryContainer.style.display = 'none';
     }
+}
+
+/**
+ * Validate that detailed scores are consistent with set score
+ * Returns { valid: boolean, message: string, detailedSetsWon: number, detailedSetsLost: number }
+ */
+function validateDetailedScoreConsistency() {
+    const setsWon = parseInt(document.getElementById('setsWon').value) || 0;
+    const setsLost = parseInt(document.getElementById('setsLost').value) || 0;
+    const totalSets = setsWon + setsLost;
+
+    let detailedSetsWon = 0;
+    let detailedSetsLost = 0;
+
+    for (let i = 1; i <= totalSets; i++) {
+        const youScore = parseInt(document.getElementById(`detailedSetYou${i}`)?.value) || 0;
+        const oppScore = parseInt(document.getElementById(`detailedSetOpp${i}`)?.value) || 0;
+
+        if (youScore > oppScore) {
+            detailedSetsWon++;
+        } else if (oppScore > youScore) {
+            detailedSetsLost++;
+        }
+        // Ties don't count as won or lost
+    }
+
+    const isConsistent = (detailedSetsWon === setsWon && detailedSetsLost === setsLost);
+
+    return {
+        valid: isConsistent,
+        detailedSetsWon,
+        detailedSetsLost,
+        expectedWon: setsWon,
+        expectedLost: setsLost,
+        message: isConsistent ? '' : t('games.detailedScoreMismatch',
+            `Os placares detalhados (${detailedSetsWon}x${detailedSetsLost}) não correspondem ao placar em sets (${setsWon}x${setsLost}). Deseja corrigir?`)
+    };
 }
 
 async function saveGame(event) {
@@ -1275,6 +1356,18 @@ async function saveGame(event) {
     const enableDetailedScore = document.getElementById('enableDetailedScore');
     if (enableDetailedScore?.checked) {
         updateDetailedScoreSummary();
+
+        // Validate consistency between detailed scores and set score
+        const validation = validateDetailedScoreConsistency();
+        if (!validation.valid) {
+            const confirmSave = confirm(
+                t('games.detailedScoreMismatch',
+                    `Os placares detalhados (${validation.detailedSetsWon}x${validation.detailedSetsLost}) não correspondem ao placar em sets (${validation.expectedWon}x${validation.expectedLost}).\n\nDeseja salvar mesmo assim?`)
+            );
+            if (!confirmSave) {
+                return;
+            }
+        }
     }
 
     const detailedScoreValue = document.getElementById('detailedScore').value;

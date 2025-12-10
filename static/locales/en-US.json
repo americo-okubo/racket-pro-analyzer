@@ -136,7 +136,10 @@
         "addDetailedScore": "Add detailed score per set",
         "fillSetsFirst": "Fill in the sets score above first",
         "totalPoints": "Total points",
-        "pointsDiff": "Balance"
+        "pointsDiff": "Balance",
+        "scoreInconsistent": "Score inconsistent!",
+        "detailedScoreMismatch": "The detailed scores don't match the sets score. Save anyway?",
+        "detailedScore": "Detailed score"
     },
     "players": {
         "title": "👥 Players",
