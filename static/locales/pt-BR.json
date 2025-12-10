@@ -42,7 +42,8 @@
         "home": "🏠 Início",
         "games": "📊 Histórico",
         "charts": "📈 Gráficos",
-        "achievements": "🏆 Conquistas"
+        "achievements": "🏆 Conquistas",
+        "streakTooltip": "Sequência de dias jogando consecutivamente"
     },
     "sports": {
         "tableTennis": {
@@ -109,7 +110,7 @@
         "result": "Resultado",
         "win": "Vitória",
         "loss": "Derrota",
-        "score": "Placar (opcional)",
+        "score": "Placar",
         "location": "Local (opcional)",
         "notes": "Notas (opcional)",
         "newPlayer": "Novo jogador",
