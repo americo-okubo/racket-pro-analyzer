@@ -105,12 +105,6 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
 
-    # Migration: Add detailed_score column to games if it doesn't exist
-    try:
-        cursor.execute("ALTER TABLE games ADD COLUMN detailed_score TEXT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-
     # Games table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS games (
@@ -135,6 +129,12 @@ def init_db():
             FOREIGN KEY (partner_id) REFERENCES players (id)
         )
     """)
+
+    # Migration: Add detailed_score column to games if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE games ADD COLUMN detailed_score TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
 
     # Create indexes for better performance
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_players_user_sport ON players (user_id, sport)")

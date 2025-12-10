@@ -1271,16 +1271,26 @@ async function saveGame(event) {
         return;
     }
 
+    // Ensure detailed score is updated before submit
+    const enableDetailedScore = document.getElementById('enableDetailedScore');
+    if (enableDetailedScore?.checked) {
+        updateDetailedScoreSummary();
+    }
+
+    const detailedScoreValue = document.getElementById('detailedScore').value;
+
     const gameData = {
         sport: currentSport,
         game_type: gameType,
         game_date: document.getElementById('gameDate').value,
         result: result,
         score: document.getElementById('gameScore').value || null,
-        detailed_score: document.getElementById('detailedScore').value || null,
+        detailed_score: detailedScoreValue || null,
         location: document.getElementById('gameLocation').value || null,
         notes: document.getElementById('gameNotes').value || null
     };
+
+    console.log('Saving game with detailed_score:', detailedScoreValue);
 
     if (isDoubles) {
         const partnerId = document.getElementById('partnerSelect').value;
