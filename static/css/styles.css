@@ -2153,19 +2153,21 @@ header {
 
 .detailed-score-summary {
     margin-top: 12px;
-    padding: 10px 15px;
+    padding: 12px 15px;
     background: var(--card-bg);
     border-radius: var(--radius-sm);
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 20px;
+    gap: 15px 25px;
     font-size: 0.9em;
 }
 
 .detailed-score-summary .summary-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    white-space: nowrap;
 }
 
 .detailed-score-summary .summary-label {
@@ -2175,6 +2177,7 @@ header {
 .detailed-score-summary .summary-value {
     font-weight: 700;
     color: var(--text-color);
+    min-width: fit-content;
 }
 
 .detailed-score-summary .summary-value.positive {
@@ -2188,9 +2191,17 @@ header {
 .detailed-score-summary .summary-warning {
     width: 100%;
     justify-content: center;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
     border-bottom: 1px dashed var(--danger-color);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.detailed-score-summary .summary-warning .summary-value {
+    padding: 2px 8px;
+    background: rgba(231, 76, 60, 0.1);
+    border-radius: 4px;
 }
 
 /* Set win/loss styling for game details */

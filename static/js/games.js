@@ -737,12 +737,31 @@ function viewGameDetails(gameId) {
     const resultClass = game.result === 'win' ? 'win' : 'loss';
     const resultText = game.result === 'win' ? t('games.win', 'Vitória') : t('games.loss', 'Derrota');
 
-    // Get head-to-head stats against opponent
+    // Get head-to-head stats against opponent 1
     const h2hGames = games.filter(g => g.opponent_id === game.opponent_id);
     const h2hWins = h2hGames.filter(g => g.result === 'win').length;
     const h2hTotal = h2hGames.length;
-    const h2hLosses = h2hTotal - h2hWins;
     const h2hRate = h2hTotal > 0 ? Math.round((h2hWins / h2hTotal) * 100) : 0;
+
+    // Get head-to-head stats against opponent 2 (for doubles)
+    let h2h2Stats = null;
+    if (isDoubles && opponent2) {
+        const h2h2Games = games.filter(g => g.opponent_id === game.opponent2_id || g.opponent2_id === game.opponent2_id);
+        const h2h2Wins = h2h2Games.filter(g => g.result === 'win').length;
+        const h2h2Total = h2h2Games.length;
+        const h2h2Rate = h2h2Total > 0 ? Math.round((h2h2Wins / h2h2Total) * 100) : 0;
+        h2h2Stats = { wins: h2h2Wins, total: h2h2Total, rate: h2h2Rate };
+    }
+
+    // Get partnership stats (games played WITH partner)
+    let partnerStats = null;
+    if (isDoubles && partner) {
+        const partnerGames = games.filter(g => g.partner_id === game.partner_id);
+        const partnerWins = partnerGames.filter(g => g.result === 'win').length;
+        const partnerTotal = partnerGames.length;
+        const partnerRate = partnerTotal > 0 ? Math.round((partnerWins / partnerTotal) * 100) : 0;
+        partnerStats = { wins: partnerWins, total: partnerTotal, rate: partnerRate };
+    }
 
     let content = `
         <div class="game-details-content">
@@ -783,6 +802,18 @@ function viewGameDetails(gameId) {
                 <span class="detail-label">${t('analytics.h2hVs', 'Histórico vs')} ${opponentName}:</span>
                 <span class="detail-value">${formatWinLoss(h2hWins, h2hTotal - h2hWins)} (${h2hRate}%)</span>
             </div>
+            ${h2h2Stats ? `
+            <div class="game-detail-row">
+                <span class="detail-label">${t('analytics.h2hVs', 'Histórico vs')} ${opponent2Name}:</span>
+                <span class="detail-value">${formatWinLoss(h2h2Stats.wins, h2h2Stats.total - h2h2Stats.wins)} (${h2h2Stats.rate}%)</span>
+            </div>
+            ` : ''}
+            ${partnerStats ? `
+            <div class="game-detail-row">
+                <span class="detail-label">${t('games.historyWith', 'Histórico com')} ${partnerName}:</span>
+                <span class="detail-value">${formatWinLoss(partnerStats.wins, partnerStats.total - partnerStats.wins)} (${partnerStats.rate}%)</span>
+            </div>
+            ` : ''}
         </div>
     `;
 
@@ -1280,11 +1311,11 @@ function updateDetailedScoreSummary() {
         summaryContainer.innerHTML = `
             ${warningHtml}
             <div class="summary-item">
-                <span class="summary-label">${t('games.totalPoints', 'Total de pontos')}:</span>
+                <span class="summary-label">📊 ${t('games.totalPoints', 'Total')}:</span>
                 <span class="summary-value">${totalYou} x ${totalOpp}</span>
             </div>
             <div class="summary-item">
-                <span class="summary-label">${t('games.pointsDiff', 'Saldo')}:</span>
+                <span class="summary-label">⚖️ ${t('games.pointsDiff', 'Saldo')}:</span>
                 <span class="summary-value ${diffClass}">${diffSign}${diff}</span>
             </div>
         `;
