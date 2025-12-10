@@ -3972,16 +3972,21 @@ function generateFrequencyChartAnalysis() {
     const gamesPerWeek = (filteredGames.length / totalWeeks).toFixed(1);
     const gamesPerMonth = (filteredGames.length / (totalDays / 30)).toFixed(1);
 
-    // Calculate by month
-    const monthCounts = {};
+    // Calculate by week (consistent with the chart)
+    const weekCounts = {};
     filteredGames.forEach(game => {
-        const month = game.game_date.substring(0, 7);
-        monthCounts[month] = (monthCounts[month] || 0) + 1;
+        const d = new Date(game.game_date);
+        // Get Monday of that week
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        const weekKey = monday.toISOString().substring(0, 10);
+        weekCounts[weekKey] = (weekCounts[weekKey] || 0) + 1;
     });
 
-    const monthEntries = Object.entries(monthCounts).sort((a, b) => b[1] - a[1]);
-    const mostActiveMonth = monthEntries[0];
-    const leastActiveMonth = monthEntries[monthEntries.length - 1];
+    const weekEntries = Object.entries(weekCounts).sort((a, b) => b[1] - a[1]);
+    const mostActiveWeek = weekEntries[0];
+    const leastActiveWeek = weekEntries[weekEntries.length - 1];
 
     // Recent activity
     const last30Days = sortedGames.filter(g => {
@@ -4010,15 +4015,21 @@ function generateFrequencyChartAnalysis() {
         parts.push(`<strong>Frequency:</strong> <span class="analysis-highlight">${gamesPerWeek}</span> games/week (${gamesPerMonth}/month) | <strong>Total:</strong> ${filteredGames.length} games in ${totalWeeks} weeks`);
     }
 
-    // Most and least active
-    if (mostActiveMonth && leastActiveMonth && mostActiveMonth[0] !== leastActiveMonth[0]) {
-        const formatMonth = (m) => { const [y, mo] = m.split('-'); return `${mo}/${y.slice(-2)}`; };
+    // Most and least active week (consistent with chart which shows weeks)
+    if (mostActiveWeek && leastActiveWeek && mostActiveWeek[0] !== leastActiveWeek[0]) {
+        const formatWeek = (dateStr) => {
+            const d = new Date(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = String(d.getFullYear()).slice(-2);
+            return `${day}/${month}/${year}`;
+        };
         if (isPt) {
-            parts.push(`<strong>Mais ativo:</strong> ${formatMonth(mostActiveMonth[0])} (${mostActiveMonth[1]} jogos) | <strong>Menos ativo:</strong> ${formatMonth(leastActiveMonth[0])} (${leastActiveMonth[1]} jogos)`);
+            parts.push(`<strong>Mais ativo:</strong> Semana ${formatWeek(mostActiveWeek[0])} (${mostActiveWeek[1]} jogos) | <strong>Menos ativo:</strong> Semana ${formatWeek(leastActiveWeek[0])} (${leastActiveWeek[1]} jogos)`);
         } else if (isJa) {
-            parts.push(`<strong>最多:</strong> ${formatMonth(mostActiveMonth[0])} (${mostActiveMonth[1]}試合) | <strong>最少:</strong> ${formatMonth(leastActiveMonth[0])} (${leastActiveMonth[1]}試合)`);
+            parts.push(`<strong>最多:</strong> 週 ${formatWeek(mostActiveWeek[0])} (${mostActiveWeek[1]}試合) | <strong>最少:</strong> 週 ${formatWeek(leastActiveWeek[0])} (${leastActiveWeek[1]}試合)`);
         } else {
-            parts.push(`<strong>Most active:</strong> ${formatMonth(mostActiveMonth[0])} (${mostActiveMonth[1]} games) | <strong>Least active:</strong> ${formatMonth(leastActiveMonth[0])} (${leastActiveMonth[1]} games)`);
+            parts.push(`<strong>Most active:</strong> Week ${formatWeek(mostActiveWeek[0])} (${mostActiveWeek[1]} games) | <strong>Least active:</strong> Week ${formatWeek(leastActiveWeek[0])} (${leastActiveWeek[1]} games)`);
         }
     }
 
