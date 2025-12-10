@@ -823,6 +823,37 @@ function editGame(gameId) {
     }
     updateSimpleResult();
 
+    // Load detailed score if exists
+    const enableDetailedScore = document.getElementById('enableDetailedScore');
+    const detailedScoreContainer = document.getElementById('detailedScoreContainer');
+    const detailedScoreInput = document.getElementById('detailedScore');
+
+    if (game.detailed_score) {
+        enableDetailedScore.checked = true;
+        detailedScoreContainer.style.display = 'block';
+        detailedScoreInput.value = game.detailed_score;
+        generateDetailedScoreInputs();
+
+        // Fill in the detailed score values
+        const scores = game.detailed_score.split(',');
+        scores.forEach((score, index) => {
+            const setNumber = index + 1;
+            const [youScore, oppScore] = score.split('-').map(s => s.trim());
+            const youInput = document.getElementById(`detailedSetYou${setNumber}`);
+            const oppInput = document.getElementById(`detailedSetOpp${setNumber}`);
+            if (youInput && oppInput) {
+                youInput.value = youScore;
+                oppInput.value = oppScore;
+                updateDetailedSetResult(setNumber);
+            }
+        });
+        updateDetailedScoreSummary();
+    } else {
+        enableDetailedScore.checked = false;
+        detailedScoreContainer.style.display = 'none';
+        detailedScoreInput.value = '';
+    }
+
     document.getElementById('gameLocation').value = game.location || '';
     document.getElementById('gameNotes').value = game.notes || '';
 
