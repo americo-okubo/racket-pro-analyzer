@@ -191,6 +191,23 @@
                         </div>
                     </div>
 
+                    <!-- Detailed Score (optional) -->
+                    <div class="form-group detailed-score-section">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableDetailedScore" onchange="toggleDetailedScore()">
+                            <span data-i18n="games.addDetailedScore">Adicionar placar detalhado por set</span>
+                        </label>
+                        <div id="detailedScoreContainer" class="detailed-score-container" style="display: none;">
+                            <div id="detailedScoreInputs" class="detailed-score-inputs">
+                                <!-- Dynamically generated set inputs -->
+                            </div>
+                            <div id="detailedScoreSummary" class="detailed-score-summary" style="display: none;">
+                                <!-- Total points summary -->
+                            </div>
+                        </div>
+                        <input type="hidden" id="detailedScore" value="">
+                    </div>
+
                     <!-- Auto-calculated Result -->
                     <div class="form-group">
                         <label data-i18n="games.result">Resultado</label>

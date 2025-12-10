@@ -861,6 +861,16 @@ function openNewGameModal() {
     document.getElementById('setsLost').value = '';
     updateSimpleResult();
 
+    // Reset detailed score section
+    const enableDetailedScore = document.getElementById('enableDetailedScore');
+    if (enableDetailedScore) {
+        enableDetailedScore.checked = false;
+        document.getElementById('detailedScoreContainer').style.display = 'none';
+        document.getElementById('detailedScore').value = '';
+        document.getElementById('detailedScoreInputs').innerHTML = '';
+        document.getElementById('detailedScoreSummary').style.display = 'none';
+    }
+
     openModal('newGameModal');
 }
 
@@ -1043,6 +1053,170 @@ function updateSimpleResult() {
         display.className = 'result-display result-draw';
         resultInput.value = 'draw';
     }
+
+    // Update detailed score inputs if enabled
+    const enableDetailedScore = document.getElementById('enableDetailedScore');
+    if (enableDetailedScore?.checked) {
+        generateDetailedScoreInputs();
+    }
+}
+
+/**
+ * Toggle detailed score section visibility
+ */
+function toggleDetailedScore() {
+    const checkbox = document.getElementById('enableDetailedScore');
+    const container = document.getElementById('detailedScoreContainer');
+
+    if (checkbox.checked) {
+        container.style.display = 'block';
+        generateDetailedScoreInputs();
+    } else {
+        container.style.display = 'none';
+        document.getElementById('detailedScore').value = '';
+    }
+}
+
+/**
+ * Generate detailed score input fields based on total sets
+ */
+function generateDetailedScoreInputs() {
+    const setsWon = parseInt(document.getElementById('setsWon').value) || 0;
+    const setsLost = parseInt(document.getElementById('setsLost').value) || 0;
+    const totalSets = setsWon + setsLost;
+
+    const container = document.getElementById('detailedScoreInputs');
+    const summaryContainer = document.getElementById('detailedScoreSummary');
+
+    if (totalSets === 0) {
+        container.innerHTML = `<p style="color: var(--text-light); text-align: center; font-size: 0.9em;">
+            ${t('games.fillSetsFirst', 'Preencha o placar em sets acima primeiro')}
+        </p>`;
+        summaryContainer.style.display = 'none';
+        return;
+    }
+
+    let html = '';
+    for (let i = 1; i <= totalSets; i++) {
+        html += `
+            <div class="detailed-set-row">
+                <span class="detailed-set-label">Set ${i}</span>
+                <div class="detailed-set-inputs">
+                    <input type="number"
+                           class="detailed-set-input"
+                           id="detailedSetYou${i}"
+                           min="0"
+                           max="99"
+                           placeholder="0"
+                           oninput="updateDetailedSetResult(${i}); updateDetailedScoreSummary();">
+                    <span class="detailed-set-vs">x</span>
+                    <input type="number"
+                           class="detailed-set-input"
+                           id="detailedSetOpp${i}"
+                           min="0"
+                           max="99"
+                           placeholder="0"
+                           oninput="updateDetailedSetResult(${i}); updateDetailedScoreSummary();">
+                </div>
+                <span class="detailed-set-result" id="detailedSetResult${i}"></span>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+    summaryContainer.style.display = 'none';
+}
+
+/**
+ * Update visual feedback for a specific set result
+ */
+function updateDetailedSetResult(setNumber) {
+    const youInput = document.getElementById(`detailedSetYou${setNumber}`);
+    const oppInput = document.getElementById(`detailedSetOpp${setNumber}`);
+    const resultSpan = document.getElementById(`detailedSetResult${setNumber}`);
+
+    const youScore = parseInt(youInput.value) || 0;
+    const oppScore = parseInt(oppInput.value) || 0;
+
+    // Reset classes
+    youInput.classList.remove('winner', 'loser');
+    oppInput.classList.remove('winner', 'loser');
+
+    if (youInput.value === '' && oppInput.value === '') {
+        resultSpan.textContent = '';
+        return;
+    }
+
+    if (youScore > oppScore) {
+        youInput.classList.add('winner');
+        oppInput.classList.add('loser');
+        resultSpan.textContent = '✓';
+    } else if (oppScore > youScore) {
+        youInput.classList.add('loser');
+        oppInput.classList.add('winner');
+        resultSpan.textContent = '✗';
+    } else {
+        resultSpan.textContent = '=';
+    }
+}
+
+/**
+ * Update the summary showing total points
+ */
+function updateDetailedScoreSummary() {
+    const setsWon = parseInt(document.getElementById('setsWon').value) || 0;
+    const setsLost = parseInt(document.getElementById('setsLost').value) || 0;
+    const totalSets = setsWon + setsLost;
+
+    const summaryContainer = document.getElementById('detailedScoreSummary');
+
+    let totalYou = 0;
+    let totalOpp = 0;
+    let filledSets = 0;
+    let detailedScores = [];
+
+    for (let i = 1; i <= totalSets; i++) {
+        const youScore = parseInt(document.getElementById(`detailedSetYou${i}`)?.value) || 0;
+        const oppScore = parseInt(document.getElementById(`detailedSetOpp${i}`)?.value) || 0;
+
+        const youInput = document.getElementById(`detailedSetYou${i}`);
+        const oppInput = document.getElementById(`detailedSetOpp${i}`);
+
+        if (youInput?.value !== '' || oppInput?.value !== '') {
+            totalYou += youScore;
+            totalOpp += oppScore;
+            filledSets++;
+            detailedScores.push(`${youScore}-${oppScore}`);
+        }
+    }
+
+    // Update hidden input with detailed score
+    const detailedScoreInput = document.getElementById('detailedScore');
+    if (filledSets === totalSets && totalSets > 0) {
+        detailedScoreInput.value = detailedScores.join(',');
+    } else {
+        detailedScoreInput.value = '';
+    }
+
+    if (filledSets > 0) {
+        const diff = totalYou - totalOpp;
+        const diffClass = diff > 0 ? 'positive' : (diff < 0 ? 'negative' : '');
+        const diffSign = diff > 0 ? '+' : '';
+
+        summaryContainer.innerHTML = `
+            <div class="summary-item">
+                <span class="summary-label">${t('games.totalPoints', 'Total de pontos')}:</span>
+                <span class="summary-value">${totalYou} x ${totalOpp}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">${t('games.pointsDiff', 'Saldo')}:</span>
+                <span class="summary-value ${diffClass}">${diffSign}${diff}</span>
+            </div>
+        `;
+        summaryContainer.style.display = 'flex';
+    } else {
+        summaryContainer.style.display = 'none';
+    }
 }
 
 async function saveGame(event) {
@@ -1072,6 +1246,7 @@ async function saveGame(event) {
         game_date: document.getElementById('gameDate').value,
         result: result,
         score: document.getElementById('gameScore').value || null,
+        detailed_score: document.getElementById('detailedScore').value || null,
         location: document.getElementById('gameLocation').value || null,
         notes: document.getElementById('gameNotes').value || null
     };

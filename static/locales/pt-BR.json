@@ -129,7 +129,14 @@
         "gameDetails": "Detalhes do Jogo",
         "viewDetails": "Ver detalhes",
         "edit": "Editar",
-        "delete": "Excluir"
+        "delete": "Excluir",
+        "scoreInSets": "Placar (em sets)",
+        "fillScore": "Preencha o placar acima",
+        "fillScoreAlert": "Por favor, preencha o placar para determinar o resultado do jogo",
+        "addDetailedScore": "Adicionar placar detalhado por set",
+        "fillSetsFirst": "Preencha o placar em sets acima primeiro",
+        "totalPoints": "Total de pontos",
+        "pointsDiff": "Saldo"
     },
     "players": {
         "title": "👥 Jogadores",

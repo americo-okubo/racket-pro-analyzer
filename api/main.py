@@ -752,10 +752,11 @@ async def create_game(game: GameCreate, user_id: int = Depends(verify_token)):
 
     cursor.execute("""
         INSERT INTO games (user_id, sport, game_type, opponent_id, opponent2_id, partner_id,
-                          game_date, result, score, location, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          game_date, result, score, detailed_score, location, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (user_id, game.sport, game.game_type, game.opponent_id, game.opponent2_id,
-          game.partner_id, game.game_date, game.result, game.score, game.location, game.notes))
+          game.partner_id, game.game_date, game.result, game.score, game.detailed_score,
+          game.location, game.notes))
 
     conn.commit()
     game_id = cursor.lastrowid

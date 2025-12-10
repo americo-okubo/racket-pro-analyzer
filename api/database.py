@@ -105,6 +105,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass  # Column already exists
 
+    # Migration: Add detailed_score column to games if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE games ADD COLUMN detailed_score TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
     # Games table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS games (
@@ -118,6 +124,7 @@ def init_db():
             game_date TEXT NOT NULL,
             result TEXT NOT NULL,
             score TEXT,
+            detailed_score TEXT,
             location TEXT,
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

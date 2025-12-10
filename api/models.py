@@ -90,7 +90,8 @@ class GameCreate(BaseModel):
     partner_id: Optional[int] = None  # For doubles
     game_date: str
     result: str  # win, loss, draw
-    score: Optional[str] = None  # JSON or text
+    score: Optional[str] = None  # e.g. "2-1" (sets)
+    detailed_score: Optional[str] = None  # e.g. "11-5,8-11,12-10" (points per set)
     location: Optional[str] = None
     notes: Optional[str] = None
 
@@ -101,6 +102,7 @@ class GameUpdate(BaseModel):
     game_date: Optional[str] = None
     result: Optional[str] = None
     score: Optional[str] = None
+    detailed_score: Optional[str] = None
     location: Optional[str] = None
     notes: Optional[str] = None
 
@@ -115,6 +117,7 @@ class GameResponse(BaseModel):
     game_date: str
     result: str
     score: Optional[str]
+    detailed_score: Optional[str]
     location: Optional[str]
     notes: Optional[str]
     created_at: datetime

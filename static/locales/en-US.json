@@ -129,7 +129,14 @@
         "gameDetails": "Game Details",
         "viewDetails": "View details",
         "edit": "Edit",
-        "delete": "Delete"
+        "delete": "Delete",
+        "scoreInSets": "Score (in sets)",
+        "fillScore": "Fill in the score above",
+        "fillScoreAlert": "Please fill in the score to determine the game result",
+        "addDetailedScore": "Add detailed score per set",
+        "fillSetsFirst": "Fill in the sets score above first",
+        "totalPoints": "Total points",
+        "pointsDiff": "Balance"
     },
     "players": {
         "title": "👥 Players",
