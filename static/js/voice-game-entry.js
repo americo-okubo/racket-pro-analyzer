@@ -95,6 +95,7 @@ const voiceGameTranslations = {
         step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Diga os pontos (ex: "11 a 5")</span>',
         step5b_setConfirmed: '✅ Set {setNumber}: <span class="voice-highlight">{setScore}</span>',
         step5b_allSetsConfirmed: '✅ Placar detalhado:\n<span class="voice-highlight">{detailedScore}</span>',
+        step5b_inconsistent: '⚠️ <span class="voice-highlight">Placar inconsistente!</span>\n\nPlacar em sets: {setsScore}\nSets ganhos no detalhe: {detailedWins}\nSets perdidos no detalhe: {detailedLosses}\n\n<span class="voice-hint">Diga "Sim" para salvar assim mesmo ou "Não" para refazer</span>',
         step5b_skipped: '⏭️ Placar detalhado pulado.',
 
         step6_prompt: '<span class="voice-highlight">📍 LOCAL</span>\n\n<span class="voice-hint">Diga o local ou "Pular"</span>',
@@ -197,6 +198,7 @@ const voiceGameTranslations = {
         step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Say the points (e.g., "11 to 5")</span>',
         step5b_setConfirmed: '✅ Set {setNumber}: <span class="voice-highlight">{setScore}</span>',
         step5b_allSetsConfirmed: '✅ Detailed score:\n<span class="voice-highlight">{detailedScore}</span>',
+        step5b_inconsistent: '⚠️ <span class="voice-highlight">Score inconsistent!</span>\n\nSets score: {setsScore}\nSets won in detail: {detailedWins}\nSets lost in detail: {detailedLosses}\n\n<span class="voice-hint">Say "Yes" to save anyway or "No" to redo</span>',
         step5b_skipped: '⏭️ Detailed score skipped.',
 
         step6_prompt: '<span class="voice-highlight">📍 LOCATION</span>\n\n<span class="voice-hint">Say the location or "Skip"</span>',
@@ -295,6 +297,7 @@ const voiceGameTranslations = {
         step5b_setPrompt: '<span class="voice-highlight">📊 セット{setNumber}</span>\n\n<span class="voice-hint">ポイントを言って (例:「11対5」)</span>',
         step5b_setConfirmed: '✅ セット{setNumber}: <span class="voice-highlight">{setScore}</span>',
         step5b_allSetsConfirmed: '✅ 詳細スコア:\n<span class="voice-highlight">{detailedScore}</span>',
+        step5b_inconsistent: '⚠️ <span class="voice-highlight">スコアが一致しません！</span>\n\nセットスコア: {setsScore}\n詳細の勝利セット: {detailedWins}\n詳細の敗北セット: {detailedLosses}\n\n<span class="voice-hint">「はい」で保存、「いいえ」でやり直し</span>',
         step5b_skipped: '⏭️ 詳細スコアをスキップ',
 
         step6_prompt: '<span class="voice-highlight">📍 場所</span>\n\n<span class="voice-hint">場所を言うか「スキップ」</span>',
@@ -923,6 +926,13 @@ function runVoiceGameStep(step) {
             skipBtn.style.display = 'inline-block';
             break;
 
+        case '5b_confirm': // Confirm inconsistent detailed score
+            prompt = getVoiceGameText('step5b_inconsistent')
+                .replace('{setsScore}', voiceGameEntry.gameData.score)
+                .replace('{detailedWins}', voiceGameEntry.detailedWins || 0)
+                .replace('{detailedLosses}', voiceGameEntry.detailedLosses || 0);
+            break;
+
         case 6: // Location (optional)
             prompt = getVoiceGameText('step6_prompt');
             skipBtn.style.display = 'inline-block';
@@ -1068,9 +1078,10 @@ function skipVoiceGameStep() {
     if (step === 5) {
         responseEl.textContent = getVoiceGameText('step5_skipped');
         setTimeout(() => runVoiceGameStep(6), 1000);
-    } else if (step === '5b' || step === '5b_set') {
+    } else if (step === '5b' || step === '5b_set' || step === '5b_confirm') {
         responseEl.textContent = getVoiceGameText('step5b_skipped');
         voiceGameEntry.detailedScoreSets = [];
+        voiceGameEntry.gameData.detailed_score = null;
         setTimeout(() => runVoiceGameStep(6), 1000);
     } else if (step === 6) {
         responseEl.textContent = getVoiceGameText('step6_skipped');
@@ -1245,13 +1256,62 @@ function processVoiceGameInput(step, transcript) {
                     voiceGameEntry.currentDetailedSet++;
                     setTimeout(() => runVoiceGameStep('5b_set'), 1500);
                 } else {
-                    // All sets recorded - save detailed score
+                    // All sets recorded - validate consistency
                     const detailedScore = voiceGameEntry.detailedScoreSets.join(',');
                     voiceGameEntry.gameData.detailed_score = detailedScore;
-                    setResponse(getVoiceGameText('step5b_allSetsConfirmed')
-                        .replace('{detailedScore}', detailedScore));
-                    setTimeout(() => runVoiceGameStep(6), 1500);
+
+                    // Count wins and losses from detailed scores
+                    let detailedWins = 0;
+                    let detailedLosses = 0;
+                    voiceGameEntry.detailedScoreSets.forEach(setScore => {
+                        const parts = setScore.split('-');
+                        if (parts.length === 2) {
+                            const myScore = parseInt(parts[0]) || 0;
+                            const oppScore = parseInt(parts[1]) || 0;
+                            if (myScore > oppScore) detailedWins++;
+                            else if (oppScore > myScore) detailedLosses++;
+                        }
+                    });
+
+                    // Check if consistent with sets score
+                    const expectedWins = parseInt(scoreParts[0]) || 0;
+                    const expectedLosses = parseInt(scoreParts[1]) || 0;
+
+                    if (detailedWins === expectedWins && detailedLosses === expectedLosses) {
+                        // Consistent - proceed normally
+                        setResponse(getVoiceGameText('step5b_allSetsConfirmed')
+                            .replace('{detailedScore}', detailedScore));
+                        setTimeout(() => runVoiceGameStep(6), 1500);
+                    } else {
+                        // Inconsistent - show warning and ask for confirmation
+                        voiceGameEntry.detailedWins = detailedWins;
+                        voiceGameEntry.detailedLosses = detailedLosses;
+                        setResponse(getVoiceGameText('step5b_inconsistent')
+                            .replace('{setsScore}', voiceGameEntry.gameData.score)
+                            .replace('{detailedWins}', detailedWins)
+                            .replace('{detailedLosses}', detailedLosses));
+                        setTimeout(() => runVoiceGameStep('5b_confirm'), 1500);
+                    }
                 }
+            }
+            break;
+
+        case '5b_confirm': // Confirm inconsistent detailed score
+            if (matchesKeywords(transcript, 'yes')) {
+                // User wants to save anyway
+                setResponse(getVoiceGameText('step5b_allSetsConfirmed')
+                    .replace('{detailedScore}', voiceGameEntry.gameData.detailed_score));
+                setTimeout(() => runVoiceGameStep(6), 1500);
+            } else if (matchesKeywords(transcript, 'no')) {
+                // User wants to redo - clear detailed scores and go back to 5b
+                voiceGameEntry.detailedScoreSets = [];
+                voiceGameEntry.currentDetailedSet = 0;
+                voiceGameEntry.gameData.detailed_score = null;
+                setResponse(getVoiceGameText('step5b_skipped'));
+                setTimeout(() => runVoiceGameStep('5b'), 1500);
+            } else {
+                setResponse(getVoiceGameText('errorNotUnderstood'));
+                document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
             }
             break;
 
