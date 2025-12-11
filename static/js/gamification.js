@@ -106,26 +106,61 @@ async function checkAchievements() {
 }
 
 // =============================================================================
-// STREAK BADGE
+// DAYS USING APP BADGE
 // =============================================================================
 
-function updateStreakBadge(streak) {
+function calculateDaysUsingApp() {
+    // Calculate days since first game
+    if (!window.games || window.games.length === 0) {
+        return 0;
+    }
+
+    // Find the earliest game date
+    let earliestDate = null;
+    window.games.forEach(game => {
+        if (game.game_date) {
+            const gameDate = new Date(game.game_date);
+            if (!earliestDate || gameDate < earliestDate) {
+                earliestDate = gameDate;
+            }
+        }
+    });
+
+    if (!earliestDate) return 0;
+
+    // Calculate days from first game to today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    earliestDate.setHours(0, 0, 0, 0);
+
+    const diffTime = today - earliestDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include first day
+
+    return diffDays;
+}
+
+function updateDaysUsingAppBadge() {
     const badge = document.getElementById('streakBadge');
     if (!badge) return;
 
-    if (streak.current_streak > 0) {
-        badge.innerHTML = `<span class="fire">🔥</span> ${streak.current_streak}`;
+    const days = calculateDaysUsingApp();
+
+    if (days > 0) {
+        badge.innerHTML = `<span class="calendar-icon">📅</span> ${days}`;
         badge.classList.remove('hidden');
-        badge.classList.add('pulse');
-        setTimeout(() => badge.classList.remove('pulse'), 600);
     } else {
         badge.classList.add('hidden');
     }
 }
 
+function updateStreakBadge(streak) {
+    // Now we show days using app instead of streak
+    updateDaysUsingAppBadge();
+}
+
 async function loadStreakBadge() {
-    const streak = await fetchStreak();
-    updateStreakBadge(streak);
+    // Load days using app instead of streak
+    updateDaysUsingAppBadge();
 }
 
 // =============================================================================

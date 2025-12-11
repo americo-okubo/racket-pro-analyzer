@@ -1168,14 +1168,19 @@ function toggleDetailedScore() {
  * Generate detailed score input fields based on total sets
  */
 function generateDetailedScoreInputs() {
-    const setsWon = parseInt(document.getElementById('setsWon').value) || 0;
-    const setsLost = parseInt(document.getElementById('setsLost').value) || 0;
+    const setsWonInput = document.getElementById('setsWon');
+    const setsLostInput = document.getElementById('setsLost');
+    const setsWon = parseInt(setsWonInput.value) || 0;
+    const setsLost = parseInt(setsLostInput.value) || 0;
     const totalSets = setsWon + setsLost;
 
     const container = document.getElementById('detailedScoreInputs');
     const summaryContainer = document.getElementById('detailedScoreSummary');
 
-    if (totalSets === 0) {
+    // Check if BOTH fields are filled (not empty strings)
+    const bothFieldsFilled = setsWonInput.value !== '' && setsLostInput.value !== '';
+
+    if (!bothFieldsFilled || totalSets === 0) {
         container.innerHTML = `<p style="color: var(--text-light); text-align: center; font-size: 0.9em;">
             ${t('games.fillSetsFirst', 'Preencha o placar em sets acima primeiro')}
         </p>`;

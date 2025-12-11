@@ -43,7 +43,7 @@
         "games": "📊 履歴",
         "charts": "📈 グラフ",
         "achievements": "🏆 実績",
-        "streakTooltip": "連続プレイ日数"
+        "streakTooltip": "初回ゲームからの日数"
     },
     "sports": {
         "tableTennis": {

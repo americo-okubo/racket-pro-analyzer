@@ -43,7 +43,7 @@
         "games": "📊 Histórico",
         "charts": "📈 Gráficos",
         "achievements": "🏆 Conquistas",
-        "streakTooltip": "Sequência de dias jogando consecutivamente"
+        "streakTooltip": "Dias desde o primeiro jogo registrado"
     },
     "sports": {
         "tableTennis": {
