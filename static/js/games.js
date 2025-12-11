@@ -1188,7 +1188,19 @@ function generateDetailedScoreInputs() {
         return;
     }
 
-    let html = '';
+    // Add header row with "You" and "Opponent" labels
+    let html = `
+        <div class="detailed-set-header">
+            <span class="detailed-set-label"></span>
+            <div class="detailed-set-inputs">
+                <span class="detailed-header-label">${t('games.you', 'Você')}</span>
+                <span class="detailed-set-vs"></span>
+                <span class="detailed-header-label">${t('games.opponent', 'Adversário')}</span>
+            </div>
+            <span class="detailed-set-result"></span>
+        </div>
+    `;
+
     for (let i = 1; i <= totalSets; i++) {
         html += `
             <div class="detailed-set-row">
