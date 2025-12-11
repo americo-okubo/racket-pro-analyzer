@@ -490,21 +490,46 @@ function convertSpokenNumbersToDigits(text) {
     result = result.replace(/\s*TAI_SEPARATOR\s*/g, '-');
 
     // Clean up common separators: "a" -> "-", "対" -> "-", "x" -> "-"
+    // Important: Replace separators BEFORE joining consecutive digits
     result = result.replace(/\s+a\s+/gi, '-');
     result = result.replace(/\s*対\s*/g, '-');
     result = result.replace(/\s+x\s+/gi, '-');
+    result = result.replace(/\s+por\s+/gi, '-'); // "11 por 9"
 
-    // Handle consecutive digits with space: "3 1" -> "3-1"
+    // Handle consecutive digits with space: "11 9" -> "11-9"
     result = result.replace(/(\d+)\s+(\d+)/g, '$1-$2');
 
-    // Handle 2-digit scores without separator (e.g., "31" from "three one")
-    if (/^\d{2}$/.test(result) && !result.includes('-')) {
-        result = result.charAt(0) + '-' + result.charAt(1);
+    // If already has separator, we're done
+    if (result.includes('-')) {
+        return result.trim();
     }
 
-    // Handle 3-digit scores (e.g., "621" -> "6-21" for tiebreak)
-    if (/^\d{3}$/.test(result) && !result.includes('-')) {
-        result = result.charAt(0) + '-' + result.substring(1);
+    // Handle scores without separator - only for single digit scores
+    // e.g., "31" from "three one" -> "3-1" (both single digits)
+    if (/^\d{2}$/.test(result)) {
+        result = result.charAt(0) + '-' + result.charAt(1);
+    }
+    // Handle 3-digit: could be "X-YY" (e.g., 6-21) or "XX-Y" (e.g., 11-9)
+    // Assume second number is larger in badminton/table tennis (at least 11 to win)
+    else if (/^\d{3}$/.test(result)) {
+        // Try to guess: if first digit is 1 and second+third make sense as score
+        const d1 = result.charAt(0);
+        const d2 = result.charAt(1);
+        const d3 = result.charAt(2);
+        const firstTwo = parseInt(result.substring(0, 2));
+        const lastTwo = parseInt(result.substring(1));
+
+        // If "119" -> could be "11-9" or "1-19"
+        // In badminton/table tennis, 11-9 is more common than 1-19
+        if (firstTwo >= 10 && firstTwo <= 30 && parseInt(d3) <= 30) {
+            result = result.substring(0, 2) + '-' + result.charAt(2);
+        } else {
+            result = result.charAt(0) + '-' + result.substring(1);
+        }
+    }
+    // Handle 4-digit: "1109" -> "11-09" or "11-9"
+    else if (/^\d{4}$/.test(result)) {
+        result = result.substring(0, 2) + '-' + result.substring(2);
     }
 
     // Clean up any remaining whitespace
