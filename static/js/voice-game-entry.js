@@ -22,9 +22,12 @@ const voiceGameEntry = {
         partner_name: null,
         result: null,
         score: null,
+        detailed_score: null,
         location: null,
         notes: null
     },
+    detailedScoreSets: [], // Temporary storage for set scores during voice entry
+    currentDetailedSet: 0, // Track which set we're recording
     players: [], // Will be loaded from global players array
     pendingMatches: [],
     pendingObservation: null,
@@ -84,9 +87,15 @@ const voiceGameTranslations = {
         step4_lost: '✅ <span class="voice-highlight">Derrota</span> registrada.',
         step4_draw: '✅ <span class="voice-highlight">Empate</span> registrado.',
 
-        step5_prompt: '<span class="voice-highlight">📊 PLACAR</span>\n\n<span class="voice-hint">Diga o placar (ex: "3 a 1" ou "6-4 6-3")</span>',
+        step5_prompt: '<span class="voice-highlight">📊 PLACAR</span>\n\n<span class="voice-hint">Diga o placar em sets (ex: "2 a 1" ou "3 a 0")</span>',
         step5_confirmed: '✅ Placar:\n<span class="voice-highlight">{score}</span>',
         step5_skipped: '⏭️ Placar pulado.',
+
+        step5b_prompt: '<span class="voice-highlight">📊 PLACAR DETALHADO</span>\n\n<span class="voice-hint">Quer informar os pontos de cada set?\n\nDiga "Sim" ou "Pular"</span>',
+        step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Diga os pontos (ex: "11 a 5")</span>',
+        step5b_setConfirmed: '✅ Set {setNumber}: <span class="voice-highlight">{setScore}</span>',
+        step5b_allSetsConfirmed: '✅ Placar detalhado:\n<span class="voice-highlight">{detailedScore}</span>',
+        step5b_skipped: '⏭️ Placar detalhado pulado.',
 
         step6_prompt: '<span class="voice-highlight">📍 LOCAL</span>\n\n<span class="voice-hint">Diga o local ou "Pular"</span>',
         step6_saved: '✅ Local:\n<span class="voice-highlight">{location}</span>',
@@ -180,9 +189,15 @@ const voiceGameTranslations = {
         step4_lost: '✅ <span class="voice-highlight">Defeat</span> registered.',
         step4_draw: '✅ <span class="voice-highlight">Draw</span> registered.',
 
-        step5_prompt: '<span class="voice-highlight">📊 SCORE</span>\n\n<span class="voice-hint">Say the score (e.g., "three one" or "six four")</span>',
+        step5_prompt: '<span class="voice-highlight">📊 SCORE</span>\n\n<span class="voice-hint">Say the score in sets (e.g., "two one" or "three zero")</span>',
         step5_confirmed: '✅ Score:\n<span class="voice-highlight">{score}</span>',
         step5_skipped: '⏭️ Score skipped.',
+
+        step5b_prompt: '<span class="voice-highlight">📊 DETAILED SCORE</span>\n\n<span class="voice-hint">Want to add points for each set?\n\nSay "Yes" or "Skip"</span>',
+        step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Say the points (e.g., "11 to 5")</span>',
+        step5b_setConfirmed: '✅ Set {setNumber}: <span class="voice-highlight">{setScore}</span>',
+        step5b_allSetsConfirmed: '✅ Detailed score:\n<span class="voice-highlight">{detailedScore}</span>',
+        step5b_skipped: '⏭️ Detailed score skipped.',
 
         step6_prompt: '<span class="voice-highlight">📍 LOCATION</span>\n\n<span class="voice-hint">Say the location or "Skip"</span>',
         step6_saved: '✅ Location:\n<span class="voice-highlight">{location}</span>',
@@ -272,9 +287,15 @@ const voiceGameTranslations = {
         step4_lost: '✅ <span class="voice-highlight">敗北</span>を記録',
         step4_draw: '✅ <span class="voice-highlight">引き分け</span>を記録',
 
-        step5_prompt: '<span class="voice-highlight">📊 スコア</span>\n\n<span class="voice-hint">スコアを言って (例:「3対1」)</span>',
+        step5_prompt: '<span class="voice-highlight">📊 スコア</span>\n\n<span class="voice-hint">セット数を言って (例:「2対1」)</span>',
         step5_confirmed: '✅ スコア:\n<span class="voice-highlight">{score}</span>',
         step5_skipped: '⏭️ スキップ',
+
+        step5b_prompt: '<span class="voice-highlight">📊 詳細スコア</span>\n\n<span class="voice-hint">各セットのポイントを入力しますか？\n\n「はい」か「スキップ」</span>',
+        step5b_setPrompt: '<span class="voice-highlight">📊 セット{setNumber}</span>\n\n<span class="voice-hint">ポイントを言って (例:「11対5」)</span>',
+        step5b_setConfirmed: '✅ セット{setNumber}: <span class="voice-highlight">{setScore}</span>',
+        step5b_allSetsConfirmed: '✅ 詳細スコア:\n<span class="voice-highlight">{detailedScore}</span>',
+        step5b_skipped: '⏭️ 詳細スコアをスキップ',
 
         step6_prompt: '<span class="voice-highlight">📍 場所</span>\n\n<span class="voice-hint">場所を言うか「スキップ」</span>',
         step6_saved: '✅ 場所:\n<span class="voice-highlight">{location}</span>',
@@ -490,7 +511,7 @@ function convertSpokenNumbersToDigits(text) {
 }
 
 /**
- * Simple string similarity
+ * Simple string similarity (Levenshtein-based)
  */
 function calculateSimilarity(str1, str2) {
     const longer = str1.length > str2.length ? str1 : str2;
@@ -514,6 +535,75 @@ function calculateSimilarity(str1, str2) {
         if (i > 0) costs[str2.length] = lastValue;
     }
     return (longer.length - costs[str2.length]) / longer.length;
+}
+
+/**
+ * Get unique locations from existing games
+ */
+function getExistingLocations() {
+    if (!window.games || !Array.isArray(window.games)) {
+        return [];
+    }
+    const locations = new Set();
+    window.games.forEach(game => {
+        if (game.location && game.location.trim()) {
+            locations.add(game.location.trim());
+        }
+    });
+    return Array.from(locations);
+}
+
+/**
+ * Normalize text for comparison (remove accents, lowercase)
+ */
+function normalizeForComparison(text) {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+        .trim();
+}
+
+/**
+ * Find best matching location from existing locations
+ * Returns { location: string, similarity: number } or null if no good match
+ */
+function findMatchingLocation(spokenText) {
+    const existingLocations = getExistingLocations();
+    if (existingLocations.length === 0) {
+        return null;
+    }
+
+    const normalizedSpoken = normalizeForComparison(spokenText);
+    let bestMatch = null;
+    let bestSimilarity = 0;
+
+    for (const location of existingLocations) {
+        const normalizedLocation = normalizeForComparison(location);
+
+        // Calculate similarity
+        const similarity = calculateSimilarity(normalizedSpoken, normalizedLocation);
+
+        // Also check if one contains the other (partial match)
+        const containsMatch = normalizedLocation.includes(normalizedSpoken) ||
+                             normalizedSpoken.includes(normalizedLocation);
+
+        // Boost similarity if there's a partial match
+        const effectiveSimilarity = containsMatch ? Math.max(similarity, 0.7) : similarity;
+
+        if (effectiveSimilarity > bestSimilarity) {
+            bestSimilarity = effectiveSimilarity;
+            bestMatch = location;
+        }
+    }
+
+    // Return match only if similarity is above threshold (0.6 = 60%)
+    if (bestSimilarity >= 0.6) {
+        return { location: bestMatch, similarity: bestSimilarity };
+    }
+
+    return null;
 }
 
 /**
@@ -566,6 +656,8 @@ function openVoiceGameModal() {
     // Reset state
     voiceGameEntry.currentStep = 1;
     voiceGameEntry.isActive = true;
+    voiceGameEntry.detailedScoreSets = [];
+    voiceGameEntry.currentDetailedSet = 0;
     voiceGameEntry.gameData = {
         game_date: new Date(),
         game_type: 'singles',
@@ -577,6 +669,7 @@ function openVoiceGameModal() {
         partner_name: null,
         result: null,
         score: null,
+        detailed_score: null,
         location: null,
         notes: null
     };
@@ -814,6 +907,22 @@ function runVoiceGameStep(step) {
             skipBtn.style.display = 'inline-block';
             break;
 
+        case '5b': // Detailed score prompt (ask if user wants to add)
+            // Only show if we have a score (X-Y format)
+            if (!voiceGameEntry.gameData.score) {
+                setTimeout(() => runVoiceGameStep(6), 100);
+                return;
+            }
+            prompt = getVoiceGameText('step5b_prompt');
+            skipBtn.style.display = 'inline-block';
+            break;
+
+        case '5b_set': // Individual set score entry
+            const setNum = voiceGameEntry.currentDetailedSet;
+            prompt = getVoiceGameText('step5b_setPrompt').replace('{setNumber}', setNum);
+            skipBtn.style.display = 'inline-block';
+            break;
+
         case 6: // Location (optional)
             prompt = getVoiceGameText('step6_prompt');
             skipBtn.style.display = 'inline-block';
@@ -959,6 +1068,10 @@ function skipVoiceGameStep() {
     if (step === 5) {
         responseEl.textContent = getVoiceGameText('step5_skipped');
         setTimeout(() => runVoiceGameStep(6), 1000);
+    } else if (step === '5b' || step === '5b_set') {
+        responseEl.textContent = getVoiceGameText('step5b_skipped');
+        voiceGameEntry.detailedScoreSets = [];
+        setTimeout(() => runVoiceGameStep(6), 1000);
     } else if (step === 6) {
         responseEl.textContent = getVoiceGameText('step6_skipped');
         setTimeout(() => runVoiceGameStep(7), 1000);
@@ -1070,7 +1183,75 @@ function processVoiceGameInput(step, transcript) {
                 const convertedScore = convertSpokenNumbersToDigits(transcript);
                 voiceGameEntry.gameData.score = convertedScore;
                 setResponse(getVoiceGameText('step5_confirmed').replace('{score}', convertedScore));
+                // Go to detailed score step instead of location
+                setTimeout(() => runVoiceGameStep('5b'), 1500);
+            }
+            break;
+
+        case '5b': // Ask if user wants detailed score
+            if (matchesKeywords(transcript, 'yes')) {
+                // Parse score to get number of sets
+                const scoreParts = voiceGameEntry.gameData.score.split('-');
+                if (scoreParts.length === 2) {
+                    const setsWon = parseInt(scoreParts[0]) || 0;
+                    const setsLost = parseInt(scoreParts[1]) || 0;
+                    const totalSets = setsWon + setsLost;
+
+                    if (totalSets > 0) {
+                        voiceGameEntry.detailedScoreSets = [];
+                        voiceGameEntry.currentDetailedSet = 1;
+                        setResponse(getVoiceGameText('step5b_setPrompt').replace('{setNumber}', '1'));
+                        setTimeout(() => runVoiceGameStep('5b_set'), 1500);
+                    } else {
+                        setResponse(getVoiceGameText('step5b_skipped'));
+                        setTimeout(() => runVoiceGameStep(6), 1500);
+                    }
+                } else {
+                    setResponse(getVoiceGameText('step5b_skipped'));
+                    setTimeout(() => runVoiceGameStep(6), 1500);
+                }
+            } else if (matchesKeywords(transcript, 'skip') || matchesKeywords(transcript, 'no')) {
+                setResponse(getVoiceGameText('step5b_skipped'));
                 setTimeout(() => runVoiceGameStep(6), 1500);
+            } else {
+                setResponse(getVoiceGameText('errorNotUnderstood'));
+                document.getElementById('voiceGameRetryBtn').style.display = 'inline-block';
+            }
+            break;
+
+        case '5b_set': // Individual set score
+            if (matchesKeywords(transcript, 'skip') || matchesKeywords(transcript, 'no')) {
+                // Skip remaining sets
+                setResponse(getVoiceGameText('step5b_skipped'));
+                voiceGameEntry.detailedScoreSets = [];
+                setTimeout(() => runVoiceGameStep(6), 1500);
+            } else {
+                // Parse set score
+                const setScore = convertSpokenNumbersToDigits(transcript);
+                const setNum = voiceGameEntry.currentDetailedSet;
+
+                // Store the set score
+                voiceGameEntry.detailedScoreSets.push(setScore);
+                setResponse(getVoiceGameText('step5b_setConfirmed')
+                    .replace('{setNumber}', setNum)
+                    .replace('{setScore}', setScore));
+
+                // Check if we have more sets to record
+                const scoreParts = voiceGameEntry.gameData.score.split('-');
+                const totalSets = (parseInt(scoreParts[0]) || 0) + (parseInt(scoreParts[1]) || 0);
+
+                if (setNum < totalSets) {
+                    // More sets to record
+                    voiceGameEntry.currentDetailedSet++;
+                    setTimeout(() => runVoiceGameStep('5b_set'), 1500);
+                } else {
+                    // All sets recorded - save detailed score
+                    const detailedScore = voiceGameEntry.detailedScoreSets.join(',');
+                    voiceGameEntry.gameData.detailed_score = detailedScore;
+                    setResponse(getVoiceGameText('step5b_allSetsConfirmed')
+                        .replace('{detailedScore}', detailedScore));
+                    setTimeout(() => runVoiceGameStep(6), 1500);
+                }
             }
             break;
 
@@ -1079,8 +1260,18 @@ function processVoiceGameInput(step, transcript) {
                 setResponse(getVoiceGameText('step6_skipped'));
                 setTimeout(() => runVoiceGameStep(7), 1500);
             } else {
-                voiceGameEntry.gameData.location = transcript;
-                setResponse(getVoiceGameText('step6_saved').replace('{location}', transcript));
+                // Try to find matching existing location
+                const match = findMatchingLocation(transcript);
+                if (match) {
+                    // Found a similar existing location - use it
+                    voiceGameEntry.gameData.location = match.location;
+                    console.log(`Location fuzzy match: "${transcript}" -> "${match.location}" (${Math.round(match.similarity * 100)}%)`);
+                    setResponse(getVoiceGameText('step6_saved').replace('{location}', match.location));
+                } else {
+                    // No match found - use transcript as-is
+                    voiceGameEntry.gameData.location = transcript;
+                    setResponse(getVoiceGameText('step6_saved').replace('{location}', transcript));
+                }
                 setTimeout(() => runVoiceGameStep(7), 1500);
             }
             break;
@@ -1288,6 +1479,7 @@ async function saveVoiceGame() {
             game_date: formattedDate,
             result: voiceGameEntry.gameData.result,
             score: voiceGameEntry.gameData.score,
+            detailed_score: voiceGameEntry.gameData.detailed_score,
             location: voiceGameEntry.gameData.location,
             notes: voiceGameEntry.gameData.notes
         };
