@@ -92,7 +92,7 @@ const voiceGameTranslations = {
         step5_skipped: '⏭️ Placar pulado.',
 
         step5b_prompt: '<span class="voice-highlight">📊 PLACAR DETALHADO</span>\n\n<span class="voice-hint">Quer informar os pontos de cada set?\n\nDiga "Sim" ou "Pular"</span>',
-        step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Diga os pontos (ex: "11 a 5")</span>',
+        step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Diga SEU placar primeiro\n(ex: "11 a 5" se ganhou, "5 a 11" se perdeu)</span>',
         step5b_setConfirmed: '✅ Set {setNumber}: <span class="voice-highlight">{setScore}</span>',
         step5b_allSetsConfirmed: '✅ Placar detalhado:\n<span class="voice-highlight">{detailedScore}</span>',
         step5b_inconsistent: '⚠️ <span class="voice-highlight">Placar inconsistente!</span>\n\nPlacar em sets: {setsScore}\nSets ganhos no detalhe: {detailedWins}\nSets perdidos no detalhe: {detailedLosses}\n\n<span class="voice-hint">Diga "Sim" para salvar assim mesmo ou "Não" para refazer</span>',
@@ -195,7 +195,7 @@ const voiceGameTranslations = {
         step5_skipped: '⏭️ Score skipped.',
 
         step5b_prompt: '<span class="voice-highlight">📊 DETAILED SCORE</span>\n\n<span class="voice-hint">Want to add points for each set?\n\nSay "Yes" or "Skip"</span>',
-        step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Say the points (e.g., "11 to 5")</span>',
+        step5b_setPrompt: '<span class="voice-highlight">📊 SET {setNumber}</span>\n\n<span class="voice-hint">Say YOUR score first\n(e.g., "11 to 5" if won, "5 to 11" if lost)</span>',
         step5b_setConfirmed: '✅ Set {setNumber}: <span class="voice-highlight">{setScore}</span>',
         step5b_allSetsConfirmed: '✅ Detailed score:\n<span class="voice-highlight">{detailedScore}</span>',
         step5b_inconsistent: '⚠️ <span class="voice-highlight">Score inconsistent!</span>\n\nSets score: {setsScore}\nSets won in detail: {detailedWins}\nSets lost in detail: {detailedLosses}\n\n<span class="voice-hint">Say "Yes" to save anyway or "No" to redo</span>',
@@ -294,7 +294,7 @@ const voiceGameTranslations = {
         step5_skipped: '⏭️ スキップ',
 
         step5b_prompt: '<span class="voice-highlight">📊 詳細スコア</span>\n\n<span class="voice-hint">各セットのポイントを入力しますか？\n\n「はい」か「スキップ」</span>',
-        step5b_setPrompt: '<span class="voice-highlight">📊 セット{setNumber}</span>\n\n<span class="voice-hint">ポイントを言って (例:「11対5」)</span>',
+        step5b_setPrompt: '<span class="voice-highlight">📊 セット{setNumber}</span>\n\n<span class="voice-hint">自分のスコアを先に\n(例: 勝ち「11対5」、負け「5対11」)</span>',
         step5b_setConfirmed: '✅ セット{setNumber}: <span class="voice-highlight">{setScore}</span>',
         step5b_allSetsConfirmed: '✅ 詳細スコア:\n<span class="voice-highlight">{detailedScore}</span>',
         step5b_inconsistent: '⚠️ <span class="voice-highlight">スコアが一致しません！</span>\n\nセットスコア: {setsScore}\n詳細の勝利セット: {detailedWins}\n詳細の敗北セット: {detailedLosses}\n\n<span class="voice-hint">「はい」で保存、「いいえ」でやり直し</span>',
@@ -891,7 +891,17 @@ function runVoiceGameStep(step) {
     const isDoubles = voiceGameEntry.gameData.game_type === 'doubles';
     const totalSteps = isDoubles ? 8 : 8; // Both have 8 steps (doubles has 3b and 3c)
 
-    stepEl.textContent = `${step}/8`;
+    // Convert step to display-friendly format
+    let displayStep = step;
+    if (typeof step === 'string') {
+        if (step === '3b') displayStep = '3b';
+        else if (step === '3c') displayStep = '3c';
+        else if (step === '5b') displayStep = '5b';
+        else if (step === '5b_set') displayStep = `Set ${voiceGameEntry.currentDetailedSet}`;
+        else if (step === '5b_confirm') displayStep = '⚠️';
+        else displayStep = step;
+    }
+    stepEl.textContent = displayStep;
     responseEl.textContent = '';
     skipBtn.style.display = 'none';
 
