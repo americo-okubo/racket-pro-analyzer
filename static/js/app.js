@@ -41,6 +41,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 // PWA / SERVICE WORKER
 // =============================================================================
 
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+}
+
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/static/js/service-worker.js')
@@ -54,14 +63,36 @@ function registerServiceWorker() {
 }
 
 function setupInstallPrompt() {
-    // Listen for the beforeinstallprompt event
+    // Check if already in standalone mode
+    if (isInStandaloneMode()) {
+        console.log('App is running in standalone mode');
+        return;
+    }
+
+    // Check if banner was dismissed recently (7 days)
+    const dismissed = localStorage.getItem('installBannerDismissed');
+    if (dismissed) {
+        const dismissedTime = parseInt(dismissed);
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - dismissedTime < sevenDays) {
+            return;
+        }
+    }
+
+    // iOS: Show banner with Safari instructions
+    if (isIOS()) {
+        showInstallBanner(true);
+        return;
+    }
+
+    // Android/Desktop: Listen for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', (e) => {
         // Prevent the mini-infobar from appearing on mobile
         e.preventDefault();
         // Store the event for later use
         deferredPrompt = e;
         // Show the install banner
-        showInstallBanner();
+        showInstallBanner(false);
     });
 
     // Listen for successful installation
@@ -70,28 +101,32 @@ function setupInstallPrompt() {
         hideInstallBanner();
         deferredPrompt = null;
     });
-
-    // Check if app is already installed (standalone mode)
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-        console.log('App is running in standalone mode');
-    }
 }
 
-function showInstallBanner() {
+function showInstallBanner(forIOS = false) {
     const banner = document.getElementById('installBanner');
-    if (banner) {
+    const iosBanner = document.getElementById('installBannerIOS');
+
+    if (forIOS && iosBanner) {
+        iosBanner.style.display = 'flex';
+    } else if (banner) {
         banner.style.display = 'flex';
-        // Apply translations if i18n is available
-        if (window.i18n && window.i18n.applyTranslations) {
-            window.i18n.applyTranslations();
-        }
+    }
+
+    // Apply translations if i18n is available
+    if (window.i18n && window.i18n.applyTranslations) {
+        window.i18n.applyTranslations();
     }
 }
 
 function hideInstallBanner() {
     const banner = document.getElementById('installBanner');
+    const iosBanner = document.getElementById('installBannerIOS');
     if (banner) {
         banner.style.display = 'none';
+    }
+    if (iosBanner) {
+        iosBanner.style.display = 'none';
     }
 }
 

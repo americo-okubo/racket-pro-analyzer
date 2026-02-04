@@ -132,7 +132,7 @@
         </section>
     </main>
 
-    <!-- PWA Install Banner -->
+    <!-- PWA Install Banner (Android/Desktop) -->
     <div id="installBanner" class="install-banner" style="display: none;">
         <div class="install-banner-content">
             <div class="install-banner-icon">
@@ -144,6 +144,22 @@
             </div>
             <div class="install-banner-actions">
                 <button onclick="installApp()" class="btn-primary btn-install" data-i18n="pwa.installButton">Instalar</button>
+                <button onclick="dismissInstallBanner()" class="btn-dismiss" title="Fechar">&times;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PWA Install Banner (iOS) -->
+    <div id="installBannerIOS" class="install-banner install-banner-ios" style="display: none;">
+        <div class="install-banner-content">
+            <div class="install-banner-icon">
+                <img src="/static/images/icon-192.png" alt="App Icon">
+            </div>
+            <div class="install-banner-text">
+                <strong data-i18n="pwa.installTitle">Instalar App</strong>
+                <span data-i18n="pwa.iosInstructions">Toque em <span class="ios-share-icon">⬆</span> e depois "Adicionar à Tela de Início"</span>
+            </div>
+            <div class="install-banner-actions">
                 <button onclick="dismissInstallBanner()" class="btn-dismiss" title="Fechar">&times;</button>
             </div>
         </div>

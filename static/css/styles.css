@@ -3112,6 +3112,24 @@ footer a {
     opacity: 1;
 }
 
+/* iOS specific styles */
+.install-banner-ios .install-banner-text span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.ios-share-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 1rem;
+}
+
 /* Mobile responsive */
 @media (max-width: 480px) {
     .install-banner {

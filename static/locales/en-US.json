@@ -345,7 +345,8 @@
     "pwa": {
         "installTitle": "Install App",
         "installDescription": "Add to home screen for quick access",
-        "installButton": "Install"
+        "installButton": "Install",
+        "iosInstructions": "Tap ⬆ then \"Add to Home Screen\""
     },
     "voice": {
         "btnStartVoice": "🎤 Register by Voice"
