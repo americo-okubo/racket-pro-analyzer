@@ -90,6 +90,17 @@ function showConfirmDialog(message) {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then((registration) => {
+                console.log('Service Worker registered:', registration.scope);
+            })
+            .catch((error) => {
+                console.error('Service Worker registration failed:', error);
+            });
+    }
+
     // Check authentication
     currentToken = localStorage.getItem('token');
     window.currentToken = currentToken; // Update window reference for voice-game-entry.js

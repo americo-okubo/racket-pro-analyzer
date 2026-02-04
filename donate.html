@@ -830,6 +830,17 @@
 
         // Initialize
         window.addEventListener('DOMContentLoaded', async () => {
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            }
+
             try {
                 // Wait for i18n to be ready
                 if (window.i18n && window.i18n.currentLanguage) {

@@ -342,6 +342,11 @@
         "sessionExpired": "Session expired",
         "requestError": "Request error"
     },
+    "pwa": {
+        "installTitle": "Install App",
+        "installDescription": "Add to home screen for quick access",
+        "installButton": "Install"
+    },
     "voice": {
         "btnStartVoice": "🎤 Register by Voice"
     },

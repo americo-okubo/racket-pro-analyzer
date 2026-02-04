@@ -6,6 +6,9 @@ const API_URL = window.location.origin;
 let currentToken = null;
 let currentUser = null;
 
+// PWA Install prompt
+let deferredPrompt = null;
+
 // =============================================================================
 // INITIALIZATION
 // =============================================================================
@@ -26,7 +29,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.i18n) {
         window.i18n.init();
     }
+
+    // Register Service Worker
+    registerServiceWorker();
+
+    // Setup PWA install prompt
+    setupInstallPrompt();
 });
+
+// =============================================================================
+// PWA / SERVICE WORKER
+// =============================================================================
+
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then((registration) => {
+                console.log('Service Worker registered:', registration.scope);
+            })
+            .catch((error) => {
+                console.error('Service Worker registration failed:', error);
+            });
+    }
+}
+
+function setupInstallPrompt() {
+    // Listen for the beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar from appearing on mobile
+        e.preventDefault();
+        // Store the event for later use
+        deferredPrompt = e;
+        // Show the install banner
+        showInstallBanner();
+    });
+
+    // Listen for successful installation
+    window.addEventListener('appinstalled', () => {
+        console.log('PWA installed successfully');
+        hideInstallBanner();
+        deferredPrompt = null;
+    });
+
+    // Check if app is already installed (standalone mode)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('App is running in standalone mode');
+    }
+}
+
+function showInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (banner) {
+        banner.style.display = 'flex';
+        // Apply translations if i18n is available
+        if (window.i18n && window.i18n.applyTranslations) {
+            window.i18n.applyTranslations();
+        }
+    }
+}
+
+function hideInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (banner) {
+        banner.style.display = 'none';
+    }
+}
+
+function dismissInstallBanner() {
+    hideInstallBanner();
+    // Store dismissal in localStorage to not show again for 7 days
+    localStorage.setItem('installBannerDismissed', Date.now().toString());
+}
+
+async function installApp() {
+    if (!deferredPrompt) {
+        console.log('Install prompt not available');
+        return;
+    }
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user's response
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('User install choice:', outcome);
+
+    // Clear the deferred prompt
+    deferredPrompt = null;
+    hideInstallBanner();
+}
 
 // =============================================================================
 // UI STATE

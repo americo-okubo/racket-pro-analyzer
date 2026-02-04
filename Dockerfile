@@ -23,6 +23,7 @@ COPY login.html .
 COPY games.html .
 COPY donate.html .
 COPY manifest.json .
+COPY service-worker.js .
 
 # Configurar variáveis de ambiente
 ENV PYTHONPATH=/app

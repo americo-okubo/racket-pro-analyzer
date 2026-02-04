@@ -342,6 +342,11 @@
         "sessionExpired": "Sessão expirada",
         "requestError": "Erro na requisição"
     },
+    "pwa": {
+        "installTitle": "Instalar App",
+        "installDescription": "Adicione à tela inicial para acesso rápido",
+        "installButton": "Instalar"
+    },
     "voice": {
         "btnStartVoice": "🎤 Registrar por Voz"
     },
