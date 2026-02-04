@@ -991,6 +991,14 @@ async def serve_manifest():
     raise HTTPException(status_code=404, detail="Manifest não encontrado")
 
 
+@app.get("/service-worker.js")
+async def serve_service_worker():
+    sw_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "service-worker.js")
+    if os.path.exists(sw_path):
+        return FileResponse(sw_path, media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="Service worker não encontrado")
+
+
 # =============================================================================
 # GAMIFICATION ENDPOINTS (Achievements System)
 # =============================================================================
