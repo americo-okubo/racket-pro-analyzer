@@ -346,7 +346,7 @@
         "installTitle": "Instalar App",
         "installDescription": "Adicione à tela inicial para acesso rápido",
         "installButton": "Instalar",
-        "iosInstructions": "Toque em ⬆ e depois \"Adicionar à Tela de Início\""
+        "iosInstructions": "No Safari: toque no botão Compartilhar (quadrado com seta) e \"Adicionar à Tela de Início\""
     },
     "voice": {
         "btnStartVoice": "🎤 Registrar por Voz"

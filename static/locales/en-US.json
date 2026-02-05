@@ -346,7 +346,7 @@
         "installTitle": "Install App",
         "installDescription": "Add to home screen for quick access",
         "installButton": "Install",
-        "iosInstructions": "Tap ⬆ then \"Add to Home Screen\""
+        "iosInstructions": "In Safari: tap the Share button (square with arrow) then \"Add to Home Screen\""
     },
     "voice": {
         "btnStartVoice": "🎤 Register by Voice"
